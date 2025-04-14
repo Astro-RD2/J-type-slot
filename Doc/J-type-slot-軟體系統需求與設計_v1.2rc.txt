@@ -1,7 +1,7 @@
 J-Type Slot 系統設計
 =============================================
 專案概述:
-- 永宙公司委託泰偉電子開發一 J型老虎機
+- 永宙公司委託泰偉電子合作開發一 J型老虎機
   2025/4/2 正式立案. 預計開發時間 1 ~ 2 個月.
 
 Version 1.1 - 2025/4/13
@@ -341,35 +341,47 @@ Version 1.2rc
   (todo)
 
 - 磁碟分割區、目錄、與檔案安排
-  Partition    Mount point      Property
-  -----------  ---------------  ----------------
-  /dev/sda1    /                ext2, readonly
-  /dev/sda2    (Extended)       Containing /dev/sda5, /dev/sda6
-  /dev/sda3    /var             ext4, read/write
-  /dev/sda4                     swap
-  /dev/sda5    /var/opt
+  原始 VLT
+  Partition    Size     Mount point     Property
+  -----------  -------  --------------  ----------------
+  /dev/sda1    10G      /               ext2, readonly
+  /dev/sda2             (Extended)      Containing /dev/sda5, /dev/sda6
+  /dev/sda3    10G      /var            ext4, read/write
+  /dev/sda4             swap
+  /dev/sda5    10G      /var/opt        ext4, read/write, noatime, barrier=0, data=writeback, nobh
+  /dev/sda6    81.2G    /opt            ext4, read/write or readonly
+  -----------  -------  ---------------  ----------------
   
-  /dev/sda3    /root/astro      readonly
-  /dev/sda4    /var
-  /dev/sda5    /var/opt/nvram   noahead,direct,no-journal
-  /dev/sda6    (SWAP)
-  -----------  ---------------  ----------------
+  這個專案 J-type slot:
+  Partition    Size     Mount point      Property
+  -----------  -------  ---------------  ----------------
+  /dev/sda1    20G      /                ext4, readonly
+  /dev/sda2             (Extended)       Containing /dev/sda5, /dev/sda6
+  /dev/sda3    20G      /var             ext4, read/write
+  /dev/sda4             swap
+  /dev/sda5    10G      /var/opt        ext4, read/write, noatime, barrier=0, data=writeback, nobh
+  /dev/sda6    81.2G    /opt            ext4, read/write or readonly
+  -----------  -------  ---------------  ----------------
   TMP          /var/tmp???      Shared memory
 
-- Directory structure
-  /boot/
-  /root/
-  /root/astro/start.sh                                  
-  /root/astro/content/AstroKernel/                      Downloadable game/content package 所在位置.
-  /root/astro/content/OperatorMenu/                     Downloadable game/content package 所在位置.
-  /root/astro/data/ --> /var/astro/astro/data/          資料與設定檔案位置
-  /root/astro/script/                                   (reserved)
-  /etc/(certain files) --> /var/etc/(certain files)
-  /var/etc/(certain files)
-  /var/astro/data/setting.ini                           目前設定.
-                  setting.ini-default                   內定(出廠)設定檔
-  /var/opt/default/etc.tgz                              tar zcvf etc.tgz /var/opt/etc/
-  /var/opt/default/gdm3.tgz                             tar zcvf etc.tgz /root/??
+- Directory structure and File
+  - Diretories structure
+    /root/
+    /root/astro/
+    /root/astro/content/                                Downloadable game/content package 所在位置.
+    /root/astro/data/ --> /var/astro/data/              程式公用資料與公用設定檔案位置
+    /root/astro/nvram/ --> /var/astro/nvram/            nvram 所在位置.
+    /root/astro/factory_default/                        出廠值存放位置.
+    /var/astro/etc/                                     可變設定檔位置 (網路, hostname, 防火牆等)
+  - Files  
+    /root/astro/start.sh                                  
+    /root/astro/content/AstroKernel/*                      
+    /root/astro/content/OperatorMenu/*
+    /root/astro/factory_default/etc.tgz                 tar zcvf etc.tgz /var/astro/etc/
+    /root/astro/factory_default/root_.config.tgz        tar zcvf etc.tgz /root/.config/
+    /etc/(certain files) --> /var/astro/etc/(certain files)
+    /root/astro/data//setting.ini --> /var/astro/data/setting.ini    目前設定.
+    /var/astro/data/setting.ini-default                 內定(出廠)設定檔
 
 - Configuration file
   - 設定檔案名稱與位置 (Runtime/Embedded): 
@@ -377,6 +389,9 @@ Version 1.2rc
     /var/astro/data/setting.ini-default  <-- 不更動此, 供回復出廠值.
   - 原始定義/來源:
     C:\Work\AsProjects\J-type-slot\Src\Configuration-files-templete\setting.ini-default
+
+- Log rotate 設定
+
 
 
 ================================================================
@@ -406,7 +421,7 @@ Version 1.2rc
   - 對於 Python 模組, 例如模組名稱 xyz, 要求一律在虛擬環境下使用 pip install xyz 方式安裝.
   - Embedded 版本將自開發機版本修改過去.
 
-步驟:
+開發機安裝設定步驟:
 1. 使用 Ubuntu 24.04 LTS 進行標準安裝.
   鍵盤/英文: US
   時區: UTC    <-- 先設定此, 未來考慮使用 UTC+7 (柬埔寨, Asia/Phnom Penh) 
@@ -445,18 +460,22 @@ Version 1.2rc
     ...
     inet 192.168.153.128/24      <-- 於 Host OS 使用 ssh client 連接此 192.168.153.128
     ...
-  - 建議使用 Share folder, 方便共享開發目錄.
+  - 建議可使用 Share folder, 方便共享開發目錄.
 7. 使 Python 易用
   $ apt install python3-pip
   $ apt install python-is-python3
+  $ apt install python3-venv
   $ apt install python3-uinput     <-- 尚未確認.
   # 其它套件.
   $ sudo apt install python3-numpy
 8. 建立 Python 虛擬環境 base
   $ mkdir /root/py-venv/
-  $ python -m env /root/py-venv/base
+  $ python -m venv /root/py-venv/base
   $ source /root/py-venv/base/bin/activate   <-- 啟動虛擬環境. (可放在開機批次檔)
   $ deactivate    <-- 結束虛擬環境
+  方便切換至 python virtual environment, 故進行如下建置:
+    $ echo "alias py-activate-base='source /root/py-venv/base/bin/activate'" >> /root/.bashrc_aliases
+    $ py-activate-base   <-- 之後執行此即可切換.
 9. 安裝需要的 utility
   $ sudo apt install yad
 10. 關掉 Wayland, 使用 X 
@@ -464,6 +483,39 @@ Version 1.2rc
     ------------------------------------------
     WaylandEnable = false
     ------------------------------------------
+11. 相關桌面設定:
+  - Ubuntu Setting=>Accessibility=>Typing=>Repeat Keys ^
+    Speed to 80% Fast, 
+    Delay to 10% Short
+  - Ubuntu Setting=>Power=>Power Saving
+    Never
+  所有 Ubuntu Setting 的內容都位於 ~/.config/dconf/*
+11. Firefox 瀏覽器 
+  - 單純化開啟 Firefox, 例如:
+    $ firefox -private-window "https://www.google.com"
+  - 進入設定頁:
+    General => Language => Check your spelling as you type  解除勾選.
+    Home => Homepage and new windows => Blank Page
+    Home => New tabs => Blank Page
+    Privacy & Security => 按下 [Clear Data], 選擇 Everything, 全選, 全清.
+    Privacy & Security => Password  解除勾選
+    Privacy & Security => Autofill => save and fill payent methods  解除勾選
+13. 建立備份:
+  - 桌面環境備份:
+    $ cd /root
+    tar zcvf /root/astro/factory_default/root_.config.tgz .config/
+  - Firefox 設定備份:
+    $ cd /root/snap
+    tar zcvf /root/astro/factory_default/root_snap_firefox.tgz firefox/
+14. 規則:
+  - 登入 root 後自動執行的指令, 寫在 /root/.profile (~/.profile) 後面.
+   
+
+================================================================
+7. Embedded 設定
+================================================================
+- Screen 設定 (Portrait, 原本螢幕順時針轉 90 度)
+  Ubuntu settings => Display => Portrait Right
 
 
 ================================================================
@@ -649,3 +701,7 @@ Version 1.2rc
     X11
     -------
     On the desktop: Ubuntu Settings --> System --> About --> Windowing System should:'X11'
+
+- Ubuntu 下, Firefox 的 configuration files (setting, bookmark, ...)
+  參考: https://askubuntu.com/questions/1414757/where-does-firefox-snap-store-the-profiles
+  location: ~/snap/firefox/common/.mozilla/firefox/kb9384jq.default/
