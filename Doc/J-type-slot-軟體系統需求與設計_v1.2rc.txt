@@ -5,7 +5,7 @@ J-Type Slot 系統設計
   2025/4/2 正式立案. 預計開發時間 1 ~ 2 個月.
 
 Version 1.1 - 2025/4/13
-Version 1.2rc
+Version 1.2rc1
 
 ============================================================
 0. 客戶(應)提供資訊
@@ -442,7 +442,7 @@ Version 1.2rc
 3. 更新/修補系統並安裝 sshd
   $ apt update
   $ apt upgrade
-  # 確認可以自命令列執行瀏覽器.
+  # 確認可以自命令列執行瀏覽器 (browser).
   $ firefox -kiosk -private-window "https://www.google.com"   可以成功全畫面、隱私分頁.
 4. 安裝 sshd
   $ apt install ssh
@@ -490,7 +490,7 @@ Version 1.2rc
   - Ubuntu Setting=>Power=>Power Saving
     Never
   所有 Ubuntu Setting 的內容都位於 ~/.config/dconf/*
-11. Firefox 瀏覽器 
+11. Firefox 瀏覽器 (browser)
   - 單純化開啟 Firefox, 例如:
     $ firefox -private-window "https://www.google.com"
   - 進入設定頁:
@@ -563,7 +563,7 @@ Version 1.2rc
     $ amixer set Master toggle  
   - 如果瀏覽器內遊戲將音量關閉, 我方是否需要得知.
 
-- 透過命令列啟動瀏覽器:
+- 透過命令列啟動瀏覽器 (browser):
   - Ubuntu 自動開啟 Firefox 並且全螢幕顯示
     firefox -kiosk -private-window [target URL]
     firefox -kiosk -private-tab [target URL]
