@@ -4,43 +4,60 @@
 #
 
 [BASIC]
-TITLE=NONAME                # Title or shop name which will be printed on receipt
-REMARK=                     # The custom remark/reminder showed on the display when entering operator menu.
+# Title or shop name which will be printed on receipt
+TITLE=NONAME
+# The custom remark/reminder showed on the display when entering operator menu.
+REMARK=
+
+# Time zone
 TIME_ZONE_LIST=UTC,UTC+6,UTC+5,UTC+7,UTC+8
 TIME_ZONE=UTC+7
 
-TIME_FORMAT_LIST=d/M/YYYY (4/23/2025)|M/d/YYYY (4/23/2025)|MMM d, YYYY (Apr 23, 2025)
+# Time format printed on receipt
+TIME_FORMAT_LIST=d/M/YYYY|M/d/YYYY|MMM d, YYYY
+TIME_FORMAT_LIST_EX=4/23/2025|4/23/2025|Apr 23, 2025
 TIME_FORMAT=d/M/YYYY
 
-CURRENCY_SYMBOL_LIST=$$,￡,￥,€     # Note, for $, must use $$ here instead of single $.  (Single '$' is regarded as an escape function)
+# The currency symbol
+# The left or right side of the money the currency symbol will be printed on
+CURRENCY_SYMBOL_LIST=$
 CURRENCY_SYMBOL=$$
-CURRENCY_SYMBOL_PRINT_SIDE=left     # The left or right side of the money the currency symbol will be printed on
+CURRENCY_SYMBOL_PRINT_SIDE=left
 
-THOUSAND_SEPARATOR=,        # One of ',', '.', or (empty)
+# One of ',', '.', or (empty)
+THOUSAND_SEPARATOR=,
 
-HOME_URL=https://demo.n1s168.com/#/      # current setting
-HOME_URL1=https://demo.n1s168.com/#/     # item1 for HOMEURL picking list
-HOME_URL2=https://www.n1s168.com/#/      # item2 for HOMEURL picking list
+# Home URL of current setting, and picking list (at most 3 items in list)
+HOME_URL=https://demo.n1s168.com/#/
+HOME_URL1=https://demo.n1s168.com/#/
+HOME_URL2=https://www.n1s168.com/#/
 #HOME_URL3=
 
-ASSET=                     # The unique ID for this machine (optional)
+# The unique ID for this machine (optional)
+ASSET=
 
 
 [NETWORK]
-DEVICE=eth0                 # The network interface (NO UI)
-BOOTPROT=static             # 'static'/'none' or 'dhcp'(factory default)
+# DEVICE: the network interface (NO UI)
+# BOOTPROT: 'static' or 'dhcp'(factory default)
+DEVICE=eth0
+BOOTPROT=static
 IPADDR=172.16.1.27
 NETMASK=255.255.255.0
 GATEWAY=172.16.1.254
 
 [REGISTER]
-ACCOUNT=                    # The account for log-on
-TOKEN=                      # Valid token stored here (encrypted)
-TOKEN_LAST_TS=              # The last timestamp the machine got the valid token
+# ACCOUNT: the account for log-on
+# TOKEN: Valid token stored here (encrypted)
+# TOKEN_LAST_TS: The last timestamp the machine got the valid token
+ACCOUNT=
+TOKEN=
+TOKEN_LAST_TS=
 
 [DEVICE]
-BILL_ACCEPTOR_PORT=/dev/ttyS0          # The serial the bill acceptor connected. /dev/ttyS0 for COM1, /dev/ttyS1 for COM2, so on. (NO UI)
+# The serial the bill acceptor connected. /dev/ttyS0 for COM1, /dev/ttyS1 for COM2, so on. (NO UI)
+BILL_ACCEPTOR_PORT=/dev/ttyS1
 
-PRINTER_NAME=ict-gr         # (NO UI)
-
+# (NO UI)
+PRINTER_NAME=ict-gr
 

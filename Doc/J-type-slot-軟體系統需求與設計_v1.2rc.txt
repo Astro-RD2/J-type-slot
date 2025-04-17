@@ -16,9 +16,15 @@ Version 1.2rc1
   ITgame02@n1s.com / ITgame02
   ITgame03@n1s.com / ITgame03
 
+- API 測試接口 for 登入:
+  HOST https://dev-api.n1s168.com/api/v1/user/login/
+  ACCOUNT: ITgame01
+  PASSWORD: ITgame01
+
 - 聯繫資料:
-   Telegram 群組 "泰偉*永宙 實體機台聯合開發案"
-   永宙技術窗口: N1S x Louis
+   Telegram 群組: "泰偉*永宙 實體機台聯合開發案"
+   永宙技術窗口: N1S x Louis/@lvuitton33688
+   API技術人員: 丹晨/@dan_cheng_zi
 
 
 ============================================================
@@ -54,6 +60,10 @@ Version 1.2rc1
         https://cn.szhcct.com/hcc-usb-rs232-80mm-1d-2d-barcode-printing-thermal-embedded-printer-hcc-ec80_p154.html
     (6) HSPOS Kiosk 印表機
         https://hsprinter.en.alibaba.com/productgrouplist-817515059/Kiosk_Printer.html?spm=a2700.shop_index.74.4.3c9c5fb35ISGK0
+        
+    Impact Receipt: epson tm-u220
+    Impact Slip: epson tm-h6000IV
+    Thermal Receipt: TM-m30, TM-T88VI, 
   - Touch panel:
     PCAP/USB, 完全滑鼠模擬.
   - 實體按鍵與鑰匙:
@@ -125,7 +135,7 @@ Version 1.2rc1
     - Python 存取設定檔案方式: https://docs.python.org/3/library/configparser.html
       import configparser
       config = configparser.ConfigParser()
-      config.read('/opt/astro/data/setting.ini')
+      config.read('/opt/astro/data/setting.ini', encoding='utf8')
       config['BASIC']['TITLE'] = 'ABC Casino'      
       config['NETWORK'] = {'DEVICE': 'eth0', 
                            'BOOTPROTO': 'dhcp'}
@@ -159,8 +169,8 @@ Version 1.2rc1
 
   - 功能: Network setting:
     +--------------------------------------------
-    |[V] Dynamic/DHCP
-    |[ ] Static
+    |(V) Dynamic/DHCP
+    |( ) Static
     |   IP address:___________  Netmask:___________
     |   Gateway:___________
     |
@@ -169,8 +179,8 @@ Version 1.2rc1
     +--------------------------------------------
     補充說明:
       - 因為需要輸入數字. 本頁應該顯示虛擬數字鍵盤.
-      - Dynamic/DHCP: 透過 DHCP protocol 動態取得網路設定.
-      - Static, IP address, Netmask, Gateway: 透過手動輸入網路設定.
+      - Dynamic/DHCP: 二選一, 透過 DHCP protocol 動態取得網路設定.
+      - Static, IP address, Netmask, Gateway: 如果選擇 Static, 系統將使用此處設定.
         選擇 Dynamic/DHCP 或 Static, 對應到設定檔 [NETWORK/BOOTPROT]
         如果選擇 Static, 則 IP address, Netmask, Gateway 分別對應到 [NETWORK/IPADDR], [NETWORK/NETMASK], [NETWORK/GATEWAY]
       - 必須按下 [ Apply ] 使修改生效. 否則頁面轉移變更失去.
@@ -393,6 +403,29 @@ Version 1.2rc1
 - Log rotate 設定
 
 
+- 登入遊戲 API server, 取得 token
+  import requests
+  from requests_toolbelt.utils import dump      # for debug
+
+  url = 'https://dev-api.n1s168.com/api/v1/user/login/'
+  headers = {"Content-Type": "application/json"}
+  data = { "account": "ITgame01", "password": "ITgame01" }
+  
+  try 
+    response = requests.post(url, json=data, headers=headers)
+    if response.status_code == 200:
+      # success
+      json_data = resonse.json()    # 取得 json 物件.
+  except
+    # error
+
+  data = dump.dump_all(response)
+  print(data.decode('utf-8'))
+  
+  print(response.status_code)
+  print(response.json())
+
+
 
 ================================================================
 5. 開發環境/機制
@@ -404,7 +437,7 @@ Version 1.2rc1
 ================================================================
 6. 開發機安裝 (Embedded 安裝前期)
 ================================================================
-開發機規劃:
+開發機規劃重點:
   - 使用 Ubuntu 24.04 標準安裝. 
   - 使能夠於開機時自動使用 root 登入 Gnome/GDM (圖形介面).
   - 設定帳號/密碼: 
@@ -424,7 +457,7 @@ Version 1.2rc1
 開發機安裝設定步驟:
 1. 使用 Ubuntu 24.04 LTS 進行標準安裝.
   鍵盤/英文: US
-  時區: UTC    <-- 先設定此, 未來考慮使用 UTC+7 (柬埔寨, Asia/Phnom Penh) 
+  時區: Canbodia (柬埔寨, Asia/Phnom Penh)     (未來考慮使用 UTC, 然後利用系統參數 offset +7)
   What apps do you like ....: 選擇 Default selection
   勾選 Install third-party software for graphics and Wi-Fi hardware
   勾選 Download and install support for additional media formats
@@ -442,11 +475,15 @@ Version 1.2rc1
 3. 更新/修補系統並安裝 sshd
   $ apt update
   $ apt upgrade
+4. 移除 snap firefox, 改安裝 DEB firefox
+   參考步驟: https://www.omgubuntu.co.uk/2022/04/how-to-install-firefox-deb-apt-ubuntu-22-04
+   如果不進行此, 會發生對 keyboard input 失效的情況.
+   
   # 確認可以自命令列執行瀏覽器 (browser).
   $ firefox -kiosk -private-window "https://www.google.com"   可以成功全畫面、隱私分頁.
 4. 安裝 sshd
   $ apt install ssh
-5. 調整 /etc/ssh/sshd_config, 使能透過 ssh client 來遠端執行 X app
+5. (不要進行此)調整 /etc/ssh/sshd_config, 使能透過 ssh client 來遠端執行 X app
   $ vi /etc/ssh/sshd_config
   -----------------------------------
   ...
@@ -465,9 +502,8 @@ Version 1.2rc1
   $ apt install python3-pip
   $ apt install python-is-python3
   $ apt install python3-venv
-  $ apt install python3-uinput     <-- 尚未確認.
+  (不要)$ apt install python3-uinput     <-- 尚未確認.
   # 其它套件.
-  $ sudo apt install python3-numpy
 8. 建立 Python 虛擬環境 base
   $ mkdir /root/py-venv/
   $ python -m venv /root/py-venv/base
@@ -476,6 +512,8 @@ Version 1.2rc1
   方便切換至 python virtual environment, 故進行如下建置:
     $ echo "alias py-activate-base='source /root/py-venv/base/bin/activate'" >> /root/.bashrc_aliases
     $ py-activate-base   <-- 之後執行此即可切換.
+  $ 編輯 /root/.profile, 末尾加上
+    source /root/py-venv/base/bin/activate
 9. 安裝需要的 utility
   $ sudo apt install yad
 10. 關掉 Wayland, 使用 X 
@@ -483,23 +521,28 @@ Version 1.2rc1
     ------------------------------------------
     WaylandEnable = false
     ------------------------------------------
-11. 相關桌面設定:
-  - Ubuntu Setting=>Accessibility=>Typing=>Repeat Keys ^
+11. 相關桌面設定 (Ubuntu Setting)
+  - Accessibility=>Typing=>Repeat Keys ^
     Speed to 80% Fast, 
     Delay to 10% Short
-  - Ubuntu Setting=>Power=>Power Saving
-    Never
-  所有 Ubuntu Setting 的內容都位於 ~/.config/dconf/*
+  - Power=>
+      Power Mode => Performance
+      Power Saving=>Screen Blank => Never
+  - Region & Language => Format 選擇 United States
+  所有 Ubuntu Setting 的內容都儲存於 ~/.config/dconf/*
 11. Firefox 瀏覽器 (browser)
   - 單純化開啟 Firefox, 例如:
     $ firefox -private-window "https://www.google.com"
   - 進入設定頁:
+    General => Always check if Firefox is the default browser    解除勾選, 不檢查.
     General => Language => Check your spelling as you type  解除勾選.
     Home => Homepage and new windows => Blank Page
     Home => New tabs => Blank Page
+    Privacy & Security => Website Privacy Perferences 全部勾選 (不販售、不追蹤)
     Privacy & Security => 按下 [Clear Data], 選擇 Everything, 全選, 全清.
-    Privacy & Security => Password  解除勾選
+    Privacy & Security => Passwords 相關. 解除勾選
     Privacy & Security => Autofill => save and fill payent methods  解除勾選
+    Privacy & Security => Firefox Data Collection and Use  全部不允許
 13. 建立備份:
   - 桌面環境備份:
     $ cd /root
@@ -509,13 +552,46 @@ Version 1.2rc1
     tar zcvf /root/astro/factory_default/root_snap_firefox.tgz firefox/
 14. 規則:
   - 登入 root 後自動執行的指令, 寫在 /root/.profile (~/.profile) 後面.
-   
+15. 安裝需要的 python 套件於虛擬環境 'base'   
+  $ source /root/py-venv/base/bin/activate
+  (base) $ pip install requests
+  (base) $ pip install selenium
+  (base) $ pip install cryptocode
+  
+
+VMware Image 版本控制
+----------------------------------
+1. J-type-Slot-Dev-v1
+   J-type-Slot-Dev-v1.1rc  
+      修正 ~/.bashrc_aliases => ~/.bash_aliases
+      pip install sele
 
 ================================================================
 7. Embedded 設定
 ================================================================
 - Screen 設定 (Portrait, 原本螢幕順時針轉 90 度)
   Ubuntu settings => Display => Portrait Right
+
+================================================================
+8. 型態管制
+================================================================
+1. 開發機 (VMware image):
+  https://astroinc-my.sharepoint.com/:u:/g/personal/killbug_astrocorp_com_tw/Edr6MEapAIBJoeK-pBC8ZJoB1XRcwTlGXizxw2n8xjPwrQ?e=8UctfJ
+  使用 VMware open 與執行即可.
+  會自動使用 root 登入.
+  如果要使用 ssh 登入, 於 VM 內開啟 Terminal, 執行 "ip a" 得知 IP, 然後使用 ssh client 登入 guest/123456 
+  然後執行 "su -", root 密碼 (兩排)
+
+2. GitHub: Astro-RD2 / J-type-slot
+  Clone 至你的本地電腦: 
+  $ git clone https://github.com/Astro-RD2/J-type-slot.git
+  已經設定部門同事都可 read/write, 其他人只能read
+  使用概念上, 將其當過去 Subversion 使用, 且直接  commit 至 branch 'main' 即可.
+
+3. Python source file 格式: Unix, UTF-8
+  且開頭必須要有如下兩行:
+  #!/usr/bin/env python
+  #-*- coding:UTF-8 -*-
 
 
 ================================================================
@@ -577,17 +653,45 @@ Version 1.2rc1
       --incognito: 表示開啟隱私/無痕分頁.
 
 - 透過程式來監視與控制被啟動的瀏覽器:
-  Python webbrowser.py 模組
-  https://stackoverflow.com/questions/5150610/how-to-simulate-mouse-click-with-the-webbrowser-control
-  https://medium.com/@chensheep1005/python-%E9%96%8B%E5%95%9Fbrowser-540dae3ad344
+  - Python webbrowser.py 模組
+    https://stackoverflow.com/questions/5150610/how-to-simulate-mouse-click-with-the-webbrowser-control
+    https://medium.com/@chensheep1005/python-%E9%96%8B%E5%95%9Fbrowser-540dae3ad344
+  - Python selenium import webdriver
+    Selenium 官網: https://www.selenium.dev/documentation/webdriver/browsers/firefox/
+    參考: https://steam.oxxostudio.tw/category/python/spider/selenium.html#a1
+    解決無法載入 profile 問題: https://stackoverflow.com/questions/72405117/selenium-geckodriver-profile-missing-your-firefox-profile-cannot-be-loaded
+    -------------------------------------------------
+    安裝:
+    $ pip install selenium
+    注意! Firefox 驅動程式已經存在於 /snap/bin/firefox.geckodriver, 無須另外安裝.
+    -------------------------------------------------
+    範例:
+    from selenium import webdriver
+    from selenium.webdriver.common.keys import Keys
+    from selenium.webdriver.support import ui
+    from selenium.webdriver.common.by import By
+    cService = webdriver.FirefoxService(executable_path='/snap/bin/firefox.geckodriver')        # <-- always have this file in that place
+    driver = webdriver.Firefox(service = cService)
+    #driver.get("https://www.google.com")
+    driver.get('https://demo.n1s168.com/#/')
+    title = driver.title()
+    driver.implicitly_wait(0.5)   # <-- wait for page to load
+    text_box = driver.find_element(by=By.NAME, value="my-text")
+    submit_button = driver.find_element(by=By.CSS_SELECTOR, value="button")
+    text_box.send_keys("Selenium")
+    submit_button.click()
+    -------------------------------------------------
+    https://stackoverflow.com/questions/28431765/open-web-in-new-tab-selenium-python
+    self.selenium.switch_to.window(window_name=window_name)   <-- 切換 between tabs
 
-- 如後透過 Python 程式來模擬實體按鍵輸入
+
+- 如何透過 Python 程式來模擬實體按鍵輸入
   - https://stackoverflow.com/questions/51406276/simulating-mouse-and-keyboard-input-on-wayland-and-x11
   - 於 X11 環境: 
     - Python module keyboard   <-- 我們使用此. 
     - 可使用若干程式以及 Python 如 xte, xdotool, xvt 等來方便模擬,
     - 可以使用 XLib 的 XSendEvent, XWrapPointer 來模擬.
-  - 於 Wayland 環境
+  - 於 Wayland 環境:
     原本可使用若干程式如 xte, xdotool, xvt 等來方便模擬, 
     自 Ubuntu 21 之後, 內定使用 Wayland 而非 X protocol, 那些程式全部失效.
     https://askubuntu.com/questions/1352062/xte-stopped-working-after-upgrading-to-ubuntu-21-04
@@ -613,24 +717,65 @@ Version 1.2rc1
       https://unix.stackexchange.com/questions/242222/read-from-dev-input-devices-without-root-privileges
 
 - Python request 範例:
+  參考: https://blog.apify.com/python-post-request/
   ----------------------------------------
   import requests
-  import json
+  #(不需要) import json
 
   url = 'http://example.com:8000/submit'
   data = {'data1': 1, 'data2': 2}       # 使用字典(dict) 來描述資料.
-  data_json = json.dumps(data)          # 轉換成 json 格式.
-  # print(data_json)
+  print(data)
+  #(不需要) headers = {"Content-Type": "application/json"}
+  #(不需要) data_json = json.dumps(data)          # 轉換成 json 格式.
+  headers = {'Authorization': 'Bearer ' + auth_token}
   try:
-      r = requests.post(url, data=data_json, timeout=15)   # default timeout is 30 seconds
+      #(不需要) r = requests.post(url, data=data_json, headers=headers, timeout=15)   # default timeout is 30 seconds
+      r = requests.post(url, json=data, headers=headers, timeout=15)
   except:
-      return   # if the requests.post fails (eg. the site is down) I want simly to return from the post_test(). 
+      return   # if the requests.post fails (eg. the site is down) I want simly to return.
                # Currenly it hangs up in the requests.post without raising an error.
 
   # start to handle 'r'
   if (r.text == 'stop'):
       sys.exit()
   ----------------------------------------
+  auth_token: 為 JWT object, 一般為之前自 API server 所獲得.
+  如果未給 timeout= 參數, default timeout is 30 seconds
+  如果直接於 requests 內使用參數 json=<dict object>, 內部直接會轉換成 json, 且 header 內自動加上  Content-Type: application/json
+
+  登入:
+  #HOST https://dev-api.n1s168.com
+  #ACCOUNT: ITgame01
+  #PASSWORD: ITgame01
+
+  import requests
+  from requests_toolbelt.utils import dump      # for debug
+
+  url = 'https://dev-api.n1s168.com/api/v1/user/login/'
+  headers = {"Content-Type": "application/json"}
+  data = { "account": "ITgame01", "password": "ITgame01" }
+  
+  response = requests.post(url, json=data, headers=headers)
+  data = dump.dump_all(response)
+  print(data.decode('utf-8'))
+  
+  print(response.status_code)
+  print(response.json())
+  
+
+- ICT 印表機測試:
+  Reset: 1B 72 01
+  Switch to ESC/POS: 1B 23
+  切換回 ASCII: 1C 2E
+  印表機恢復初始設定: 無底線、取消反白、單倍寬、單倍高、16x24 字型、ASCII 編碼模式、字元靠左對齊、一維條碼位置重置、一維條碼高 140 點: 1B 40
+  列印濃淡: 1D 28 4B m
+  
+  echo -e -n '\x1B\x72\x01' > /dev/ttyACM0
+  echo -e -n '\x1B\x23' > /dev/ttyACM0
+  echo -e -n '\x1C\x2E' > /dev/ttyACM0
+  echo -e -n 'Hello World\n\f' > /dev/ttyACM0
+  echo -e -n '\x1D\x61' > /dev/ttyACM0
+
 
 - AstroKernel hook keyboard
   - Keylogger
@@ -705,3 +850,7 @@ Version 1.2rc1
 - Ubuntu 下, Firefox 的 configuration files (setting, bookmark, ...)
   參考: https://askubuntu.com/questions/1414757/where-does-firefox-snap-store-the-profiles
   location: ~/snap/firefox/common/.mozilla/firefox/kb9384jq.default/
+
+- 列印  
+  - 插入 ICT SP1 printer USB, 會顯示如下裝置 /dev/ttyACM0:
+    echo -e -n '\x1B\xF0' > /dev/ttyACM0

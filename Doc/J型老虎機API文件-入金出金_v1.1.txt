@@ -1,0 +1,260 @@
+J-Type Slot API 文件 (J型老虎機)
+=============================================
+
+概述: 泰偉與永宙合作開發 J-type 老虎機. 泰偉提供入金/出金 API 規格如下。
+作者: Chance
+更新: v1.0 - 2025/4/13 minor fix
+     v1.1 - 2025/4/17 move field 'token' from the json data of request to its header
+
+
+- 關鍵字
+  Slot kernel (簡稱 Kernel) - 執行於 Slot 內的主要控制程式.
+  Central/中央 - 指的是中央遊戲系統. 尤指位於雲端的 API server.
+  BA/紙鈔機 - Bill acceptor, 接收紙鈔的裝置.
+  Receipt priner/印表機 - 列印收據(Receipt/Voucher)的熱感式印表機.
+  
+- API 請求回應
+  針對 API 請求, 請先參考本文件所定義之方式進行回應. 若無對應, 再參考 RFC 2612 所定義的方式回應.
+  https://restfulapi.net/http-status-codes/
+  
+- 入金
+  - 入金流程:
+    (1) 當玩家插入紙鈔進紙鈔機, 啟動入金流程.
+    (2) 紙鈔機將紙鈔捲入並停放於暫存區(Escrow), 進行判斷, 對於不可辨識紙鈔將被直接退回, 流程結束.
+        如果可識別, 獲得金額 ($)
+    (3) Kernel 發出 "請求入金授權 req-cashin" API
+    (4) 中央將決定是否接受此紙鈔. 
+        有可能會因為超過 current credit 上限, 系統 out of service, 無效 token 等因素而拒絕.
+        若中央決定接受, 將新增一筆入金交易紀錄 "入金 pending 紀錄", 其包含一對應且唯一之交易代碼 (TX)
+        一律 "RETURN" 結果. 在決定接收的情況下參數內會包括該交易代碼 (TX).
+    (5) Kernel 收到 "RETURN", 如果結果是 "拒絕" 或發生錯誤, 直接下令 BA 退回紙鈔, 流程結束.
+        如果結果是 "接受", 下令紙鈔機開始將紙鈔捲入錢箱 (Stacking to stack/cash box). 
+    (6) 當紙鈔機確認該紙鈔已經捲入達某一臨界(確認收到), 會通知 Kernel 一確認訊號.
+        如果過程中紙鈔機馬達壞掉/故障, Kernel 即不會獲得上述確認訊號, 不會發出第二階段 API, 視情況保持 retry 或結束流程.
+    (7) Kernel 發出 "入金確認 (end-cashin)" API, 參數包括之前交易代碼 (TX)
+    (8) 中央依據交易代號(TX) 將指定 "入金 pending 紀錄" 關閉, 實際更新 current credit. 
+        進行 "RETURN", 代表交易已正式被承認並生效. 
+    (9) Kernel 收到 "RETURN", 結束流程. 
+        因為 Current credit 被改變, 故 Kernel 可以自動代玩家進行 "Refresh" 動作.
+    (10) 流程圖:
+        Slot kernel              Central
+        ================         ===========================
+        [第一階段]
+        讀取紙鈔金額 ($)
+        "req-cashin ($)" ------>
+                                 建立一筆入金 pending 紀錄 (TX).
+                         <------ "RETURN (TX)"
+        下令 BA 捲入紙鈔
+
+        [第二階段]
+        紙鈔已確實被收進
+        "end-cashin (TX)" ----->
+                                 將該筆入金 pending 紀錄關閉, 更新帳務.
+                         <------ "RETURN"
+        [REFRESH]
+        ================         ===========================
+    (11) 有關逾時(數值暫定)與限制:
+        - Slot 自發出 "req-cashin" 開始起算, 只要超過 15 sec 未收到對應 "RETURN", 會直接將紙鈔退回並結束流程.
+        - Slot 自發出 "end-cashin" 開始起算, 只要超過 15 sec 未收到對應且成功之 "RETURN", 即會重複發送相同之 "end-cashin". 會不斷循環直到收到對應且成功之 "RETURN" 為止.
+          即使中途發生 power cycle, 也會於重新開機後繼續發送. (故 slot 端需要有紀錄至 disk/nvram 的動作)
+          注意! 不是所有的失敗 "RETURN" 都要 retry. 需視情況, 有些可能是直接結束流程, 例如收到 "1-NO RECORD" 或 "6-BAD DATA/FORMAT" 這類邏輯錯誤, 無 retry 意義. 
+        - 自讀取紙鈔開始到收到第二階段成功之 "RETURN" 期間, 除非中途結束流程, 否則一律禁止接收新鈔 (BA accept disabled).
+        - 如果中央確實已經無法回覆第二階段成功之 "RETURN", 例如因為程式錯誤、資料毀損等, 則 local operator 必須至機台的 Operator menu 執行 Reset 動作.
+
+  - 中央觀點入金流程注意事項:
+    (1) 概念: 針對某一帳號, "req-cashin" 與 "end-cashin" 兩兩成對, 每對對應至一筆入金交易.
+    (2) 當收到 "req-cashin", 中央一律為其建立一筆 "入金 pending 紀錄" (以下簡稱 PENDING), 並產生對應之交易序號 TX, 返回此交易序號給 Slot.
+        如果收到時已存在之前 PENDING, 必須先將舊 PENDING 失效 (註記為失效、刪除, 或基本上不管它也可).
+    (3) 當收到 "end-cashin" 時若目前存在 PENDING 且 TX 相同, 將該 PENDING 確認並關閉 (completed), 並進行帳務更新.
+    (4) 當收到 "end-cashin" 時若目前並不存在 PENDING, 或雖存在但 TX 不相同, 則僅需 log 該 "end-cashin" 訊息(供偵錯)隨即丟棄並 "RETURN".
+        此情況不對資料庫進行任何狀態變更, 即之前存在的 PENDING 依然有效.
+    (5) 同一時間某一帳號最多只會存在一筆有效 "入金 pending 紀錄".
+  
+  - 入金 API 規格:
+    (1) 請求入金授權 (req-cashin):
+      Method: POST
+      Content-Type: application/json
+      Authorization: Bearer <token>
+      Request data:
+        {
+          "action": "req-cashin",    # 請求名稱
+          "currency": "USD",         # 幣別 (見下面格式說明)
+          "value": "100"             # 紙鈔面額 (number)(單位: 元/dollar/pound/eur)
+          "dateTime": "2025-04-10T13:58:01.023Z"    # 發生時間(紙鈔接收) (見下面格式說明)
+        }
+    
+      Return data:
+        {
+          "status": "<status code>", # "0-OK" 表示成功
+                                     # "1-OVER LIMIT" 表示已經超過 CREDITS 上限, 無法接收更多.
+                                     # "2-OCCUPIED" 表示已被網頁玩家占用. 不算是錯誤. (reserved)
+                                     # "6-BAD DATA/FORMAT", "7-OUT OF SERVICE", "9-OTHER ERROR"
+          "action": "req-cashin",    # 請求名稱
+          "currency": "USD",         # 幣別 (見下面格式說明) (僅供參考)
+          "value": "100",            # 紙鈔面額 (number)(單位: 元/dollar/pound/eur) (僅供參考)
+          "TXID": "733cce9b-f07f-4a1c-9fff-397b8e1b0dd5", # 交易紀錄代號 (見下面格式說明). 只有當 status=0 才視為有效資料, 否則此欄位內容應為 "0"
+          "dateTime": "2025-04-10T13:58:02.791Z"    # pending 紀錄建立時間 (見下面格式說明)
+        }
+
+    (2) 入金確認 (end-cashin):
+      Method: POST
+      Content-Type: application/json
+      Authorization: Bearer <token>
+      Request data:
+        {
+          "action": "end-cashin",    # 請求名稱
+          "currency": "USD",         # 幣別 (見下面格式說明) (僅供參考)
+          "value": "100",            # 紙鈔面額 (number)(單位: 元/dollar/pound/eur) (僅供參考)
+          "TXID": "733cce9b-f07f-4a1c-9fff-397b8e1b0dd5",  # 交易紀錄代號 (見下面格式說明)
+          "dateTime": "2024-04-10T13:58:04.105Z"    # 紙鈔進 cash box 時間 (見下面格式說明)
+        }
+    
+      Return data:
+        {
+          "status": "<status code>", # "0-OK" 表示成功.
+                                     # "1-NO RECORD" 表示無對應入金紀錄, 可視為邏輯錯誤, 應結束流程.
+                                     # "6-BAD DATA/FORMAT", "7-OUT OF SERVICE", "9-OTHER ERROR"
+          "action": "end-cashin",    # 請求名稱
+          "currency": "USD",         # 幣別 (見下面格式說明) (僅供參考). 只有當 status=0 才視為有效資料.
+          "value": "100",            # 紙鈔面額 (number)(單位: 元/dollar/pound/eur). (僅供參考)只有當 status=0 才視為有效資料.
+          "TXID": "733cce9b-f07f-4a1c-9fff-397b8e1b0dd5",  # 交易紀錄代號 (僅供參考)(見下面格式說明). 只有當 status=0 才視為有效資料.
+          "dateTime": "2024-04-10T13:58:04.699Z"    # 事件/Complete 時間 (見下面格式說明)
+        }
+     
+    - 欄位格式說明:
+      - 資料內容依據 JSON 標準格式.
+      - "currency": 幣別, 依據 ISO-4217 規範. 例如美金為 USD, 台幣為 TWD, 歐元為 EUR, 等.
+      - "dateTime": 通常為事件/訊息發生時間 (一律使用 UTC time). 格式: "<YYYY>-<MM>-<DD>T<HH>:<mm>:<SS>[.<sss>]Z"
+                <YYYY> 四碼西元年, 例如: 1996, 2024
+                <MM> 兩碼月份, 例如 03, 11 分別表示三月、十一月
+                <DD> 日期 1 ~ 31
+                <HH> 小時 0 ~ 23 (24小時制)
+                <mm> 分鐘 0~59
+                <SS> 秒鐘 0~60
+                <sss> 毫秒(millisecond) 000~999 (optional)
+      - "TXID": 交易紀錄代號 (TX No.). 格式: 可以為 UUID 或某種全系統唯一代號. 
+
+- 出金
+  - 出金流程:
+    (1) 當目前位於遊戲首頁(?)、且玩家按下 [CASHOUT]、且目前印表機無異常, 則啟動出金流程.
+    (2) Kernel 發出 "請求出金授權 req-cashout" API
+    (3) 中央將決定是否出金.
+        有可能會因為目前 current credit 為 0, 系統 out of service, 無效 token 等因素而拒絕出金.
+        若中央准許出金, 將新增一筆出金交易紀錄 "出金 pending 紀錄", 其包含一唯一之交易代碼 (TX) 以及核定出金金額 ($)
+        一律 "RETURN" 結果. 在准許出金的情況下參數內會包括該交易代碼 (TX) 以及可出金金額 ($).
+    (4) Kernel 收到 "RETURN", 如果結果是 "拒絕" 或發生錯誤, 表示不進行出金, 流程結束.
+        如果結果是 "准許", 下令印表機列印收據(兌現憑證).
+    (5) 如果此時才偵測到印表機異常, 直接結束流程即可.
+        否則即需開始列印動作.
+    (6) 當列印動作已經成功完成並已完整輸出至系統 printing queue, 即視為列印成功.
+        如果稍後實際列印過程發生故障, 然因為系統 printing queue 的緣故, 狀況排除後都還是會自動印出.
+        (除非遇到機器/裝置燒毀等嚴重狀況, 則進行無收據人工出金即可)
+    (7) Kernel 發出 "出金確認 (end-cashout)" API, 參數包括之前交易代碼 (TX) 以及實際收據金額($, 此項目僅供參考)
+    (8) 中央依據交易代號 (TX) 將指定 "出金 pending 紀錄" 關閉, 實際更新 current credit (多半至 0). 
+        進行 "RETURN", 代表交易已正式被承認並生效. 
+    (9) Kernel 收到 "RETURN", 結束流程. 
+        因為 Current credit 被改變, 故 Kernel 可以自動代玩家進行 "Refresh" 動作.
+    (10) 流程圖:
+        Slot kernel              Central
+        ================         ===========================
+        [第一階段]
+        "req-cashout"    ------>
+                                 建立一筆出金 pending 紀錄 (TX).
+                         <------ "RETURN (TX, $)"
+        下令列印收據
+                      
+        [第二階段]
+        case 1:當時情況無法列印
+        do nothing
+        
+        case 2:列印動作執行成功
+        "end-cashout"(TX) -----> 
+                                 將該筆出金 pending 紀錄關閉, 更新帳務.
+                         <------ "RETURN"
+        (do nothing, or retry if error)
+        ================         ===========================
+    (11) 有關逾時(數值暫定)與限制:
+        - Slot 自發出 "req-cashout" 開始起算, 只要超過 15 sec 未收到對應 "RETURN", 直接結束程序.
+        - Slot 自發出 "end-cashout" 開始起算, 只要超過 15 sec 未收到對應且成功之 "RETURN", 即會重複發送相同之 "end-cashout". 會不斷循環直到收到對應且成功之 "RETURN" 為止.
+          即使中途發生 power cycle, 也會於重新開機後繼續發送. (故 slot 端需要有紀錄至 disk/nvram 的動作)
+          注意! 不是所有的失敗 "RETURN" 都要 retry. 需視情況, 有些可能是直接結束流程, 例如收到 "1-NO RECORD" 這可能是因為已經結帳; 又或 "6-BAD DATA/FORMAT" 這是邏輯錯誤, 無 retry 意義. 
+        - 整個出金流程期間, 原則上應可繼續進新紙鈔.
+          實際出金金額依據 "req-cashout" 當時中央核定的金額來決定, 應不受中途進鈔影響.
+        - 如果中央確實已經無法回覆第二階段成功之 "RETURN", 例如因為程式錯誤、資料毀損等, 則 local operator 必須至機台的 Operator menu 執行 Reset 動作.
+
+  - 中央觀點出金流程注意事項:
+    (1) 概念: 針對某一帳號, "req-cashout" 與 "end-cashout" 兩兩成對, 每對對應至一筆出金交易.
+    (2) 當收到 "req-cashout", 中央一律為其建立一筆 "出金 pending 紀錄" (以下簡稱 PENDING), 並產生對應之交易序號 TX 與核可出金金額, 返回此交易序號與金額給 Slot.
+        如果收到時已存在之前 PENDING, 必須先將舊 PENDING 失效 (註記為失效、或刪除).
+    (3) 當收到 "end-cashout" 時若目前存在 PENDING 且 TX 相同, 將該 PENDING 確認並關閉 (completed), 並進行帳務更新.
+    (4) 當收到 "end-cashout" 時若目前並不存在 PENDING, 或雖存在但 TX 不相同, 則僅需 log 該 "end-cashout" 訊息(供偵錯)隨即丟棄並 "RETURN".
+        此情況不對資料庫進行任何狀態變更, 即之前存在的 PENDING 依然有效.
+    (5) 同一時間某一帳號最多只會存在一筆有效 "出金 pending 紀錄".
+    (6) 隨時允許透過其它管道(櫃檯網頁)對該機台帳號進行(人工)出金. 
+        唯注意! 無論從何管道出金, 實際出金時必須一併將已存在 "出金 pending 紀錄" 失效(或刪除).
+        之後如收到來自 Slot 的 "end-cashout", 會因為找不到對應 PENDING 而自動結束流程.
+
+  - 出金 API 規格:
+    (1) 請求出金授權 (req-cashout):
+      Method: POST
+      Content-Type: application/json
+      Authorization: Bearer <token>
+      Request data:
+        {
+          "action": "req-cashout",   # 請求名稱
+          "dateTime": "2025-04-10T13:58:01.023Z"    # 發生時間(按下 [CASHOUT]) (見下面格式說明)
+        }
+    
+      Return data:
+        {
+          "status": "<status code>", # "0-OK" 表示成功, 開始印收據.
+                                     # "1-NO CREDITS" 表示沒有餘額/核可金額為 0 無法出金. 不算是錯誤.
+                                     # "2-OCCUPIED": 表示已被網頁玩家占用, 無法在此出金. 不算是錯誤. (reserved)
+                                     # "6-BAD DATA/FORMAT", "7-OUT OF SERVICE", "9-OTHER ERROR"
+          "action": "req-cashout",   # 請求名稱
+          "currency": "USD",         # 幣別 (見下面格式說明). 只有當 status=0 才視為有效資料.
+          "value": "100",            # 核可出金金額 (number)(單位: 元/dollar/pound/eur) 只有當 status=0 才視為有效資料.
+          "TXID": "673cae9b-f07f-4a2d-9fff-3a801aab33df", # 交易紀錄代號 (見下面格式說明). 只有當 status=0 才視為有效資料, 否則此欄位內容應為 "0"
+          "dateTime": "2025-04-10T13:58:02.791Z"    # pending 紀錄建立時間 (見下面格式說明)
+        }
+
+    (2) 出金確認 (end-cashin):
+      Method: POST
+      Content-Type: application/json
+      Authorization: Bearer <token>
+      Request data:
+        {
+          "action": "end-cashout",   # 請求名稱
+          "currency": "USD",         # 幣別 (見下面格式說明)
+          "value": "100",            # 收據列印面額 (number)(單位: 元/dollar/pound/eur) (僅供參考)
+          "TXID": "673cae9b-f07f-4a2d-9fff-3a801aab33df",  # 交易紀錄代號 (見下面格式說明)
+          "dateTime": "2024-04-10T13:58:04.105Z"    # 收據成功印出時間 (見下面格式說明)
+        }
+    
+      Return data:
+        {
+          "status": "<status code>", # "0-OK" 表示成功.
+                                     # "1-NO RECORD" 表示無對應入金紀錄, 包括可能已經採用另外管道出金. 不算是錯誤.
+                                     # "6-BAD DATA/FORMAT", "7-OUT OF SERVICE", "9-OTHER ERROR"
+          "action": "end-cashout",   # 請求名稱
+          "currency": "USD",         # 幣別 (見下面格式說明) (僅供參考) 只有當 status=0 才視為有效資料.
+          "value": "100",            # 實際出金金額 (number)(單位: 元/dollar/pound/eur) (僅供參考). 只有當 status=0 才視為有效資料.
+          "TXID": "673cae9b-f07f-4a2d-9fff-3a801aab33df",  # 交易紀錄代號 (僅供參考) (見下面格式說明) (僅供參考).
+          "dateTime": "2024-04-10T13:58:04.699Z"    # 事件/Complete 時間 (見下面格式說明)
+        }
+     
+    - 欄位格式說明:
+      - 資料內容依據 JSON 標準格式.
+      - "currency": 幣別, 依據 ISO-4217 規範. 例如美金為 USD, 台幣為 TWD, 歐元為 EUR, 等.
+      - "dateTime": 通常為事件/訊息發生時間 (一律使用 UTC time). 格式: "<YYYY>-<MM>-<DD>T<HH>:<mm>:<SS>[.<sss>]Z"
+                <YYYY> 四碼西元年, 例如: 1996, 2024
+                <MM> 兩碼月份, 例如 03, 11 分別表示三月、十一月
+                <DD> 日期 1 ~ 31
+                <HH> 小時 0 ~ 23 (24小時制)
+                <mm> 分鐘 0~59
+                <SS> 秒鐘 0~60
+                <sss> 毫秒(millisecond) 000~999 (optional)
+      - "TXID": 交易紀錄代號 (TX No.). 格式: 可以為 UUID 或某種全系統唯一代號. 
+
+<DOCUMENT END>
+  
