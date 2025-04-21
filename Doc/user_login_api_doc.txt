@@ -1,0 +1,41 @@
+# User Login API Documentation
+
+## Endpoint
+
+POST {{host}}/api/v1/user/login/
+
+## Request
+
+Content-Type: application/json
+
+{ "account": "{{account}}", "password": "{{password}}" }
+
+### Request Parameters
+
+- account: string (required) - User account identifier
+- password: string (required) - User password
+
+## Response
+
+Content-Type: application/json
+
+{ "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiNzFmYjIxZmNhOTA3MjM0NzI5Yjc2NDk2MzEyYmYxYjNkODIxZjEwMDBkNzQyZWE5NGE4YmVlZjE5MmRkNjM2MDMwOWRjNjA5ZTJiYWU3YjAiLCJpYXQiOjE3NDQ4MDIwMjAuMDkyNzkyLCJuYmYiOjE3NDQ4MDIwMjAuMDkyNzk1LCJleHAiOjE3NzYzMzgwMjAuMDg0Mjc2LCJzdWIiOiIzMDAzOCIsInNjb3BlcyI6W119.pQlhfaeEtNh6tqrVqKg0q5GqLBZx_GuQp4KY6Fq6tN0-QHvWeulSh5fYvgBVPE-HMocZSiL66CpUa6dke3tTYKaFb6W4k4R15huD0ef3SA9Z0nUPM_cp1t0nlctJkbCxJVjdbDApfEYxbhUpV1wvSXHzOaPkn9gUNbmhql73H16KxM7JuLOKgTWH5An_WzGb6h8QXOXma84EMyDJ7OI7LmveMNsmzxRlALGRzVYBGux0UsVdW0GNsiuBcpay7abyqQurKp3J7LTtZhNqMYE3gzG2w6w1laLAJnCaqKGwy4q7zPYakzcGB1SdeWs9Os16QTh9JRRusYy9C1WHaNAXbwAgCus-rUnK6kVK68maw5Wd602RmOIBuDj8mQdKCUdXOWE0I0aL2g9mzcVT09vurn6zWuXwGoHUfQp1q4Cppxxmxk-LOwCOjrBlaEM8Bmzb3iro9LZ8ylKvjxw7DeQog6mnJarzH8ZYMlDOsfv73UvaqUXpqqH-zcGG_U1T6x1OWWqis8GxjTNs_bHoCOgU0n9BfIkQtwgkoJp_n7uUx84fOf2MJ4JChl14TLagxp_EXgKR6ssNYO8ZBfQyKXY8D6fulNbKrWRlYDxvCYb1SedmM4PWoD2xN6NpsefrypNJTYMzguoRU4nqpOpWGZKX7mSgME4T8YKET3-IqpZt4UI", 
+  "data": { "id": 30038, "name": "", "account": "ITgame01", "credit": "500.000000", "user_level": 1 }, "ip": "203.204.249.111", "status": true }
+
+### Response Fields
+
+- token: string - JWT authentication token
+- data: object
+  - id: integer - User ID
+  - name: string - User name (may be empty)
+  - account: string - User account identifier
+  - credit: string - User credit balance
+  - user_level: integer - User level
+- ip: string - Client IP address
+- status: boolean - Login success status
+
+## Notes
+
+- The token should be included in the Authorization header for subsequent authenticated requests
+- All requests must be made over HTTPS
+- Invalid credentials will return an appropriate error response
