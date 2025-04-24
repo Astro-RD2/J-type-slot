@@ -254,7 +254,127 @@ VMware Image 版本控制
 - Screen 設定 (Portrait, 原本螢幕順時針轉 90 度)
   Ubuntu settings => Display => Portrait Right
 
+<<<<<<< HEAD:Doc/J-type-slot-軟體技術設計.txt
 - Firefox 瀏覽器 (browser) 設定.
+=======
+  url = 'https://dev-api.n1s168.com/api/v1/user/login/'
+  headers = {"Content-Type": "application/json"}
+  data = { "account": "ITgame01", "password": "ITgame01" }
+  
+  try 
+    response = requests.post(url, json=data, headers=headers)
+    if response.status_code == 200:
+      # success
+      json_data = response.json()    # 取得 json 物件.
+  except
+    # error
+
+  data = dump.dump_all(response)
+  print(data.decode('utf-8'))
+  
+  print(response.status_code)  # 取得回應 code, 如果為 '200' 表示成功
+  print(response.json())  # 取得回應 body
+
+
+
+================================================================
+6. 開發機安裝 (Embedded 安裝前期)
+================================================================
+開發機規劃重點:
+  - 使用 Ubuntu 24.04 標準安裝. 
+  - 使能夠於開機時自動使用 root 登入 Gnome/GDM (圖形介面).
+  - 設定帳號/密碼: 
+      guest/123456   僅供 ssh client 登入用.
+      root/!qaz2wsx  此為 root 帳號/密碼. 所有開發作業、執行環境等皆於此.
+  - 如果使用 ssh client, 限使用 guest 帳號登入. 
+    登入後如果要轉換成 root 使用者, 執行 'su -' 然後輸入 root 密碼即可.
+  - 切換內定的 Wayland 至 X protocol
+  - 使用 Firefox 瀏覽器為主.
+  - Python 一律執行於虛擬環境 'base'
+    啟動此虛擬環境: /root/py-venv/base/bin/activate
+    離開此虛擬環境: 在任何地方直接執行 deactivate
+    注意! 開發目錄 與 虛擬環境目錄 (/root/py-venv/base/) 相互獨立.
+  - 對於 Python 模組, 例如模組名稱 xyz, 要求一律在虛擬環境下使用 pip install xyz 方式安裝.
+  - Embedded 版本將自開發機版本修改過去.
+
+開發機安裝設定步驟:
+1. 使用 Ubuntu 24.04 LTS 進行標準安裝.
+  鍵盤/英文: US
+  時區: Canbodia (柬埔寨, Asia/Phnom Penh)     (未來考慮使用 UTC, 然後利用系統參數 offset +7)
+  What apps do you like ....: 選擇 Default selection
+  勾選 Install third-party software for graphics and Wi-Fi hardware
+  勾選 Download and install support for additional media formats
+  Computer name: JTYPE-DEVCOM
+  Username: guest
+  Password: 12345678
+  確認勾選 Require my password to log in
+  第一次登入選 guest
+    右下出現齒輪, 選擇 Ubuntu on Xorg, 使切換到使用 X11 而非內定的 Wayland
+  
+2. 使開機後能自動以 root 帳號登入 GNOME/GDM
+  參考 https://hackmd.io/@Cyui/B1YnFwT8R
+  root 密碼: !qaz2wsx 
+  設定完成重開機
+3. 更新/修補系統並安裝 sshd
+  $ apt update
+  $ apt upgrade
+4. 移除 snap firefox, 改安裝 DEB firefox
+   參考步驟: https://www.omgubuntu.co.uk/2022/04/how-to-install-firefox-deb-apt-ubuntu-22-04
+   如果不進行此, 會發生對 keyboard input 失效的情況.
+   
+  # 確認可以自命令列執行瀏覽器 (browser).
+  $ firefox -kiosk -private-window "https://www.google.com"   可以成功全畫面、隱私分頁.
+4. 安裝 sshd
+  $ apt install ssh
+5. (不要進行此)調整 /etc/ssh/sshd_config, 使能透過 ssh client 來遠端執行 X app
+  $ vi /etc/ssh/sshd_config
+  -----------------------------------
+  ...
+  X11Forwarding yes
+  X11DisplayOffset 10 
+  -----------------------------------
+  上述測試結果失敗.
+6. 如果安裝於 VMware Player/Station
+  - 測試可自 Host OS 發出 ssh client 連線至此 Virtual machine.
+    $ ip a
+    ...
+    inet 192.168.153.128/24      <-- 於 Host OS 使用 ssh client 連接此 192.168.153.128
+    ...
+  - 建議可使用 Share folder, 方便共享開發目錄.
+7. 使 Python 易用
+  $ apt install python3-pip
+  $ apt install python-is-python3
+  $ apt install python3-venv
+  (不要)$ apt install python3-uinput     <-- 尚未確認.
+  # 其它套件.
+8. 建立 Python 虛擬環境 base
+  $ mkdir /root/py-venv/
+  $ python -m venv /root/py-venv/base
+  $ source /root/py-venv/base/bin/activate   <-- 啟動虛擬環境. (可放在開機批次檔)
+  $ deactivate    <-- 結束虛擬環境
+  方便切換至 python virtual environment, 故進行如下建置:
+    $ echo "alias py-activate-base='source /root/py-venv/base/bin/activate'" >> /root/.bash_aliases
+    $ py-activate-base   <-- 之後執行此即可切換.
+  $ 編輯 /root/.profile, 末尾加上
+    source /root/py-venv/base/bin/activate
+9. 安裝需要的 utility
+  $ sudo apt install yad
+10. 關掉 Wayland, 使用 X 
+  $ sudo vi /etc/gdm3/custom.conf
+    ------------------------------------------
+    WaylandEnable = false
+    ------------------------------------------
+11. 相關桌面設定 (Ubuntu Setting)
+  - Accessibility=>Typing=>Repeat Keys ^
+    Speed to 80% Fast, 
+    Delay to 10% Short
+  - Power=>
+      Power Mode => Performance
+      Power Saving=>Screen Blank => Never
+  - Region & Language => Format 選擇 United States
+  所有 Ubuntu Setting 的內容都儲存於 ~/.config/dconf/*
+11. Firefox 瀏覽器 (browser)
+>>>>>>> 5ec99b9e6cb324294cadf9da94c5aa85e8745a31:Doc/J-type-slot-軟體系統需求與設計.txt
   - 單純化開啟 Firefox, 例如:
     $ firefox -private-window "https://www.google.com"
   - 進入設定頁:
