@@ -1,0 +1,646 @@
+{
+	"info": {
+		"_postman_id": "1764831f-6e38-4beb-99a6-149b24d0442e",
+		"name": "J-Type API",
+		"description": "API collection for J-Type cash flow operations",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "98830"
+	},
+	"item": [
+		{
+			"name": "Cash In",
+			"item": [
+				{
+					"name": "Request Cash In",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"action\": \"req-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/deposit/jtype/req-cashin",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"deposit",
+								"jtype",
+								"req-cashin"
+							]
+						},
+						"description": "Request a cash in transaction. Required fields: action (req-cashin), currency (USD), value (numeric), dateTime (ISO 8601 format). Authentication via Bearer Token."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"req-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"0-OK\",\n    \"action\": \"req-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Validation Error Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"invalid-action\",\n    \"currency\": \"EUR\",\n    \"value\": \"not-a-number\",\n    \"dateTime\": \"invalid-date\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"6-BAD DATA/FORMAT\",\n    \"action\": \"req-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Unauthorized Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer invalid_token",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"req-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"7-OUT OF SERVICE\",\n    \"action\": \"req-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Other Error Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"req-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"9-OTHER ERROR\",\n    \"action\": \"req-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "End Cash In",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"action\": \"end-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"c43a0fe8-9e7f-47c0-aad3-6ffaebb10e9e\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/deposit/jtype/end-cashin",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"deposit",
+								"jtype",
+								"end-cashin"
+							]
+						},
+						"description": "Complete a cash in transaction. Required fields: action (end-cashin), currency (USD), value (numeric), TXID (string), dateTime (ISO 8601 format). Authentication via Bearer Token."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"end-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"0-OK\",\n    \"action\": \"end-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Validation Error Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"invalid-action\",\n    \"currency\": \"EUR\",\n    \"value\": \"not-a-number\",\n    \"TXID\": \"\",\n    \"dateTime\": \"invalid-date\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"6-BAD DATA/FORMAT\",\n    \"action\": \"end-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Unauthorized Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer invalid_token",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"end-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"7-OUT OF SERVICE\",\n    \"action\": \"end-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Other Error Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"end-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"invalid_txid\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"9-OTHER ERROR\",\n    \"action\": \"end-cashin\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Cash Out",
+			"item": [
+				{
+					"name": "Request Cash Out",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"action\": \"req-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/withdrawal/jtype/req-cashout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"withdrawal",
+								"jtype",
+								"req-cashout"
+							]
+						},
+						"description": "Request a cash out transaction. Required fields: action (req-cashout), currency (USD), value (numeric), dateTime (ISO 8601 format). Authentication via Bearer Token."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"req-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"0-OK\",\n    \"action\": \"req-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Validation Error Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"invalid-action\",\n    \"currency\": \"EUR\",\n    \"value\": \"not-a-number\",\n    \"dateTime\": \"invalid-date\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"6-BAD DATA/FORMAT\",\n    \"action\": \"req-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Unauthorized Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer invalid_token",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"req-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"7-OUT OF SERVICE\",\n    \"action\": \"req-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Other Error Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"req-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"9-OTHER ERROR\",\n    \"action\": \"req-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						}
+					]
+				},
+				{
+					"name": "End Cash Out",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"action\": \"end-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"8279aef9-8b93-4d7f-bcb9-ffc85d06fdcd\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/withdrawal/jtype/end-cashout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"withdrawal",
+								"jtype",
+								"end-cashout"
+							]
+						},
+						"description": "Complete a cash out transaction. Required fields: action (end-cashout), currency (USD), value (numeric), TXID (string), dateTime (ISO 8601 format). Authentication via Bearer Token."
+					},
+					"response": [
+						{
+							"name": "Success Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"end-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"0-OK\",\n    \"action\": \"end-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Validation Error Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"invalid-action\",\n    \"currency\": \"EUR\",\n    \"value\": \"not-a-number\",\n    \"TXID\": \"\",\n    \"dateTime\": \"invalid-date\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"6-BAD DATA/FORMAT\",\n    \"action\": \"end-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Unauthorized Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer invalid_token",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"end-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"7-OUT OF SERVICE\",\n    \"action\": \"end-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Insufficient Balance Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"end-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 1000000.00,\n    \"TXID\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"1-OVER LIMIT\",\n    \"action\": \"end-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						},
+						{
+							"name": "Other Error Response",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"action\": \"end-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 100.00,\n    \"TXID\": \"invalid_txid\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+								},
+								"url": {
+									"raw": ""
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [],
+							"cookie": [],
+							"body": "{\n    \"status\": \"9-OTHER ERROR\",\n    \"action\": \"end-cashout\",\n    \"currency\": \"USD\",\n    \"value\": 0,\n    \"TXID\": \"0\",\n    \"dateTime\": \"2025-04-10T13:58:01.023Z\"\n}"
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your_token_here",
+			"type": "string"
+		}
+	]
+}

@@ -1,0 +1,423 @@
+J-Type Slot 系統設計
+=============================================
+專案概述:
+- 永宙公司委託泰偉電子合作開發一 J型老虎機
+  2025/4/2 正式立案. 預計開發時間 1 ~ 2 個月.
+
+Version 1.1 - 2025/4/13
+Version 1.2rc1
+
+============================================================
+0. 客戶(應)提供資訊
+============================================================
+- 發展網頁與測試帳號:
+  https://demo.n1s168.com/#/
+  ITgame01@n1s.com / ITgame01
+  ITgame02@n1s.com / ITgame02
+  ITgame03@n1s.com / ITgame03
+
+- API 測試接口 
+  - API HOST(base_url}: https://dev-api.n1s168.com
+  - for 登入:
+    {base_url}/api/v1/user/login/
+    ACCOUNT: ITgame01
+    PASSWORD: ITgame01
+  - for 入金:
+    {base_url}/api/v1/deposit/type/req-cashin/
+    {base_url}/api/v1/deposit/type/end-cashin/
+  - for 出金:
+    {base_url}/api/v1/deposit/type/req-cashout/
+    {base_url}/api/v1/deposit/type/end-cashout/
+
+- 聯繫資料:
+   Telegram 群組: "泰偉*永宙 實體機台聯合開發案"
+   永宙技術窗口: N1S x Louis/@lvuitton33688
+   API技術人員: 丹晨/@dan_cheng_zi
+
+
+============================================================
+1. 基本需求確認 Requirement
+============================================================
+- 硬體規格
+  - 主機規格：
+    CPU i5-8350U: https://www.intel.com.tw/content/www/tw/zh/products/sku/124969/intel-core-i58350u-processor-6m-cache-up-to-3-60-ghz/specifications.html
+    RAM 8G, SSD 128G
+    COM PORT x6 - COM2 for Bill acceptor
+    USB 2.0  x4 - for Touch panel and Receipt printer
+    USB 3.0  x2
+    HDMI     x1 - FHD Monitor
+    VGA      x1
+    LAN      x2 - LAN1 for internet, LAN2 for local maintenance
+  - Bill acceptor ICQ L70 series
+    Required: RS-232 port on COM2
+  - 印表機:
+    要求: Openframe, ESC/POS 相容, 考慮機構大小.
+    (1) ICT SP1 series (https://www.ictgroup.com.tw/download/Installation%20Guide/SP1%20Series%20Installation%20Guide%20(EN)%20H6887G-R.pdf)
+        各 series (BDS, BDL, BNS, BNL, NNS) 只是機構/紙捲大小/裝置不同, 軟體方面完全相同. NNS總高度較小 106.27mm
+        文件內有提到 ESC/POS 相容
+        正視圖 H=120mm, W=100mm
+    (2) ICT GP-58CR (https://www.ictgroup.com.tw/download/Installation%20Guide/GP-58CR%20Installation%20Guide%20(EN)%20H4816M-R.pdf)
+        文件內有提到 ESC/POS 相容
+        正視圖
+        正視圖 H=120mm, W=100mm
+    (3) Embedded 58MM 熱收據印表機迷你列印模組支援 USB 和 TTL 序列埠 ESC/POS 命令
+        https://www.amazon.com/Maikrt-Embedded-Thermal-Printing-Commands/dp/B07PX9NYR3
+    (4) HCC-E5 華辰聯創
+        https://www.szhcct.com/HCC-E5-ESC-POS-80mm-Thermal-Receipt-Panel-Printer-with-Auto-Cutter-pd738501098.html
+    (5) HCC-EC80 USB RS232 80mm
+        https://cn.szhcct.com/hcc-usb-rs232-80mm-1d-2d-barcode-printing-thermal-embedded-printer-hcc-ec80_p154.html
+    (6) HSPOS Kiosk 印表機
+        https://hsprinter.en.alibaba.com/productgrouplist-817515059/Kiosk_Printer.html?spm=a2700.shop_index.74.4.3c9c5fb35ISGK0
+        
+    Impact Receipt: epson tm-u220
+    Impact Slip: epson tm-h6000IV
+    Thermal Receipt: TM-m30, TM-T88VI, 
+  - Touch panel:
+    PCAP/USB, 完全滑鼠模擬.
+  - 實體按鍵與鑰匙:
+    完全使用 keyboard 對應按鍵來模擬輸入.
+  - 需要保持 intenet 時間同步.
+  - 機台會設計一對外 USB 充電孔供玩家手機充電, 要求必須與主機板的電源、USB 孔相互獨立.
+  - 瀏覽器:
+    遊戲瀏覽器 (Game browser): 首頁 (Home page), 遊戲載入 (Game loading pages), 遊戲 (Game pages)
+    Operator瀏覽器 (Operator browser): Networking, Register, Payment device test
+
+- Keyboard 對應
+  - 實體按鍵與鍵盤對應表
+    -- KEYBOARD -------------------------------
+    實體按鍵   鍵盤對應              轉換/動作                 說明
+    --------  ------------------- ------------------------ -----------------------
+    SPIN      [Ctrl-ALT-Enter]    於遊戲中轉換成[SPACE]送出   啟動一局遊戲
+    CASHOUT   [Ctrl-ALT-P]                                 進行 Payout
+    HOME      [Ctrl-Alt-HOME]     引導目前網頁至首頁.         用來回到遊戲首頁.
+    VOLUME+   [Ctrl-ALT-'+']      amixer set Master 10%+   提升音量
+    VOLUME-   [Ctrl-ALT-'-']      amixer set Master 10%-   降低音量
+    REFRESH   [Ctrl-ALT-R]        滑鼠點選 Refresh 圖案      觸發網頁中央獲取最新 credits 數值的動作
+    -- KEY -------------------------------
+    OPERATOR  [Ctrl-ALT-O]                                 於 HOME 狀態, 可切換至 OPERATOR 選單.
+  - 無須按鈕背燈保持全亮, 無須依情境控制.
+    群組 2025/4/2: 對方回應所有按鍵無須依據情境, 全亮即可. 
+
+- API (站在機台觀點)
+  - 帳號註冊取得 token
+    描述: 透過帳號/密碼取得認證 token, 供未來網頁登入以及 API 連線使用.
+    發動時機: 於 Operator menu => Setting Page => 輸入帳/密並按下 "註冊/取得認證 token".
+    SEND: <account>, BASE64(HASH(<password>))
+    RECEIVE: <token>
+  - 登入驗證
+    描述: 檢查指定 token 是否有效.
+    發動時機: 開機後, 不定時刻, 可透發送此來與中央確認該 token 是否有效.
+    SEND: <token>
+    RECEIVE: <token status>
+  - 請求入金授權:
+    描述: 透過此向中央取得入金授權
+    發動時機: 當玩家放入紙鈔時, 向中央確認是否接受此紙鈔.
+    SEND: <currency>, <value>
+    RECEIVE: <status>, <TXID>
+  - 入金確認:
+    描述: 透過此回報已經確認接收進紙鈔
+    發動時機: 當將紙鈔轉移進錢箱時.
+    SEND: <TXID>
+    RECEIVE: <status>, <TXID>, <currency>, <value>
+  - 取得出金授權:
+    描述: 透過此向中央取得出金授權
+    發動時機: 當玩家按下 [CASHOUT] 按鈕時, 向中央取得授權、交易代碼、以及金額.
+    SEND: (none)
+    RECEIVE: <status>, <TXID>, <currency>, <value>
+  - 出金確認:
+    描述: 透過此回報已經印出收據(兌現憑據)予玩家
+    發動時機: 當列印收據成功時.
+    SEND: <TXID>
+    RECEIVE: <status>
+  - (目前保留) 目前狀態 : Occupied, Non-occupied
+            [HOME][GAME]
+
+
+============================================================
+2. AstroKernel 與 Operator menu 溝通介面規格
+============================================================
+- 概述:
+  - 當 AstroKernel 偵測到目前位於 "遊戲首頁" 且轉動 [Operator] key 時, 應切換至顯示 Operator menu.
+  - 於 Operator menu, 一律顯示滑鼠游標以利偵錯. 離開 Operator menu 時則隱藏游標.
+  - Operator menu 將使用 Web App (Python + Flask) 方式開發.
+  - 設定檔案位置 (Runtime/Embedded): 
+    /root/astro/data/setting.ini 
+    /var/astro/data/setting.ini-default  <-- 不更動此, 供回復出廠值.
+
+- Python 存取設定檔案方式:
+  - 參考: https://docs.python.org/3/library/configparser.html
+  - 範例:
+    import configparser
+    config = configparser.ConfigParser()
+    # 自指定設定檔案讀取資料.
+    config.read('/root/astro/data/setting.ini', encoding='utf8')   # 一定要有 encoding 參數.
+    config['BASIC']['TITLE'] = 'ABC Casino'      
+    config['NETWORK'] = {'DEVICE': 'eth0', 
+                         'BOOTPROTO': 'dhcp'}
+    print(config['BASIC']['TIME_ZONE'])       # show: UTC+7
+    ...
+    # 將設定資料寫入至指定設定檔案.
+    with open('/root/astro/data/setting.ini', 'w') as configfile:
+       config.write(configfile, space_around_delimiters=False)
+
+- 設定檔案內容 
+  - 原始定義位於如下, 並以該檔案為準:
+    J-type-slot\Src\Configuration-files-templete\setting.ini-default
+  - 內容 (此處僅供參考, 但正確性也頗高):
+    --------------------------------------------------------------------
+    #
+    # J-type slot configuration file
+    # File: setting.ini
+    #
+    
+    [BASIC]
+    # Title or shop name which will be printed on receipt
+    TITLE=NONAME
+    # The custom remark/reminder showed on the display when entering operator menu.
+    REMARK=
+    
+    # Time zone
+    TIME_ZONE_LIST=UTC,UTC+6,UTC+5,UTC+7,UTC+8
+    TIME_ZONE=UTC+7
+    
+    # Time format printed on receipt
+    TIME_FORMAT_LIST=d/M/YYYY|M/d/YYYY|MMM d, YYYY
+    TIME_FORMAT_LIST_EX=4/23/2025|4/23/2025|Apr 23, 2025
+    TIME_FORMAT=d/M/YYYY
+    
+    # The currency symbol
+    # The left or right side of the money the currency symbol will be printed on
+    CURRENCY_SYMBOL_LIST=$
+    CURRENCY_SYMBOL=$$
+    CURRENCY_SYMBOL_PRINT_SIDE=left
+    
+    # One of ',', '.', or (empty)
+    THOUSAND_SEPARATOR=,
+    
+    # Home URL of current setting, and picking list (at most 3 items in list)
+    HOME_URL=https://demo.n1s168.com/#/
+    HOME_URL1=https://demo.n1s168.com/#/
+    HOME_URL2=https://www.n1s168.com/#/
+    #HOME_URL3=
+    
+    # The unique ID for this machine (optional)
+    ASSET=
+    
+    
+    [NETWORK]
+    # DEVICE: the network interface (NO UI)
+    # BOOTPROT: 'static' or 'dhcp'(factory default)
+    DEVICE=eth0
+    BOOTPROT=static
+    IPADDR=172.16.1.27
+    NETMASK=255.255.255.0
+    GATEWAY=172.16.1.254
+    
+    [REGISTER]
+    # ACCOUNT: the account for log-on
+    # TOKEN: Valid token stored here (encrypted)
+    # TOKEN_LAST_TS: The last timestamp the machine got the valid token
+    ACCOUNT=
+    TOKEN=
+    TOKEN_LAST_TS=
+    
+    [DEVICE]
+    # The serial the bill acceptor connected. /dev/ttyS0 for COM1, /dev/ttyS1 for COM2, so on. (NO UI)
+    BILL_ACCEPTOR_PORT=/dev/ttyS1
+    
+    # (NO UI)
+    PRINTER_NAME=ict-gr
+    --------------------------------------------------------------------
+
+
+============================================================
+3. Operator Menu 設計
+============================================================
+- 螢幕上半部資訊
+  於 Operator menu 之螢幕上半部恆常顯示如下資訊:
+  +--------------------------------------------
+  |
+  |Kernel ver:      IP:         Current date/time:
+  |HOME URL: https://xxxxxxxxxxxxx
+  |Title:          Asset:         Account:
+  |Token state:
+  |Note:
+  +--------------------------------------------
+  補充說明:
+    - 顯示相關資訊, 以利管理.
+    - Token state: 僅顯示 Valid 表示有效 或是 Invalid 表示無效.
+
+- 左下邊主選單:
+  - Network setting
+  - Basic data setting
+  - Register
+  - Bill acceptor test
+  - Receipt printer test
+  - Reset
+  - [CLOSE] 按鈕: 關閉 Operator menu, 回到 Game menu
+
+- 功能: Network setting:
+  +--------------------------------------------
+  |(V) Dynamic/DHCP
+  |( ) Static
+  |   IP address:___________  Netmask:___________
+  |   Gateway:___________
+  |
+  |[ Apply ]
+  |
+  +--------------------------------------------
+  補充說明:
+    - 因為需要輸入數字. 本頁應該顯示虛擬數字鍵盤.
+    - Dynamic/DHCP: 二選一, 透過 DHCP protocol 動態取得網路設定.
+    - Static, IP address, Netmask, Gateway: 如果選擇 Static, 系統將使用此處設定.
+      選擇 Dynamic/DHCP 或 Static, 對應到設定檔 [NETWORK/BOOTPROT]
+      如果選擇 Static, 則 IP address, Netmask, Gateway 分別對應到 [NETWORK/IPADDR], [NETWORK/NETMASK], [NETWORK/GATEWAY]
+    - 必須按下 [ Apply ] 使修改生效. 否則頁面轉移變更失去.
+
+- 功能: Basic data setting
+  +--------------------------------------------
+  |The title or shop name which will be printed on receipt.
+  |__________        
+  |
+  |The custom remark/reminder showed on the display when entering operator menu.
+  |________________________________________________________
+  |
+  |Time zone: ________[V]
+  |Time format: _______________[V]
+  |
+  |Currency symbol:___[V], printed on the (V)left ( )right side of the money
+  |Thousand separator:__[V]
+  |
+  |The URL of home page of game portal.
+  |Home URL: _________________________[V]
+  |API Entry: __________________________????
+  |
+  |The unique ID for this slot machine (optional)
+  |Asset:____________
+  | 
+  |[ Apply ]
+  |
+  +--------------------------------------------
+  補充說明:
+    - 因為需要輸入文數字. 本頁應該顯示虛擬(全)鍵盤.
+    - Title: 對應到設定檔 [BASIC/TITLE]
+    - Custom Remark: 對應到設定檔 [BASIC/REMARK]
+    - Time zone: 自清單挑選 time zone. 故可以顯示計算 Local time 與 UTC 之對應.
+      清單對應到設定檔 [BASIC/TIME_ZONE_LIST]
+      數值對應到設定檔 [BASIC/TIME_ZONE]
+    - Time format: 自清單挑選特定格式. 例如: May 20, 2024
+      清單對應到設定檔 [BASIC/TIME_FORMAT_LIST]. 例如: d/M/YYYY (4/23/2025), M/d/YYYY (4/23/2025), MMM d, YYYY (Apr 23, 2025)
+      數值對應到設定檔 [BASIC/TIME_FORMAT]. 柬埔寨內定為 d/M/YYYY.
+    - Currency symbol: 手動輸入或自清單選擇, 供列印收據時參考. 例如: $, £, ¥, €, ₣, etc. 並選擇顯示於金額的左邊還是右邊.
+      清單對應到設定檔 [BASIC/CURRENCY_SYMBOL_LIST]
+      數值對應到設定檔 [BASIC/CURRENCY_SYMBOL]
+      列印位置對應到設定檔 [BASIC/CURRENCY_SYMBOL_PRINT_SIDE]
+    - Thousand separator: 自清單挑選, 供列印收據時參考. 可選擇: ',', '.', (None)
+      清單寫死於程式.
+      數值對應到設定檔 [BASIC/THOUSAND_SEPARATOR]
+    - Home URL: 手動輸入或自清單選擇. 表示遊戲首頁 URL.
+      清單對應到設定檔 [BASIC/HOME_URL#]. #=1~3. 當輸入有效 Home URL 就會加入此清單, 如果超過三組最舊的被排擠 (MRU rule).
+      數值對應到設定檔 [BASIC/HOME_URL]
+    - Asset: 此老虎機之唯一識別 ID, 由系統營運商提供. (for future, 目前選擇性提供). 
+      The system uses Asset + MAC to identify the specific machine.
+    - 必須按下 [ Apply ] 使修改生效. 否則頁面轉移變更失去.
+
+- 功能: Register
+  +--------------------------------------------
+  |Account:_____________
+  |Password:*********
+  |[ Get token ] [ Drop token ]
+  |
+  |Token: Valid from (timestamp)
+  |[ Login test ]
+  |
+  +--------------------------------------------
+  補充說明:
+    - Account, Password: 此機台所代表玩家之帳號密碼.
+      Account 對應到設定檔 [REGISTER/ACCOUNT]
+    - 輸入帳密後, 按下 [Get token] 按鈕, 將透過 API 向後台取得 token.
+    - Token: 僅顯示 token 狀態, 如下某一:
+      "Valid from YYYY/MM/DD HH:mm:SS" 表示目前 token 有效
+      "Invalid"  表示目前 token 無效.
+      --
+      Token 狀態對應到設定檔 [REGISTER/TOKEN] 
+        如果內容為空, 表示無效. 
+        如果不為空, 表示 token 有效.
+      在 Token 有效的情況下, 生效時間對應到設定檔 [REGISTER/TOKEN_LAST_TS]
+    - 於 Token 有效情況下, 可隨時按 [Login test] 按鈕來驗證 token, 驗證結果透過彈出訊息視窗告知.
+
+- 功能: Bill acceptor test
+  +--------------------------------------------
+  |Model name:xxxxx    Firmware:xxxxx   CRC:xxx
+  |Currency: USD
+  |Status: <status>
+  |Last input: 10 Dollars
+  |[ Return bill ] [ Stack bill ]
+  |Note! All input here will NOT be counted into accounting
+  |
+  +--------------------------------------------
+  補充說明:
+    - Status 顯示 Bill acceptor 目前狀態.
+      可能是: Ready, Disconnected, Bill Jam, Bad code, CRC error, Stack (near) full, 
+             Cashbox uninstalled, Bill counterfeit, Reverse way, Wrong protocol, Unknow bill...
+    - 於此頁, 當 Bill acceptr 狀態為 Ready, 可以隨時放入紙鈔進行測試.
+    - 當放入紙鈔, 紙鈔會捲入至暫存區(Escrow) 並進行識別, 然後停在那.
+      接下來可按下 [ Return bill ] 來退回紙鈔, 或是 [ Stack bill ] 將紙鈔捲入 cash box.
+      於此頁進入 cash box 之紙鈔不計入帳務. (測試完後紙鈔要拿出來)
+
+- 功能: Receipt printer test
+  +--------------------------------------------
+  |Model name:xxxxx   Driver:xxxxx  Firmware:xxxx   CRC:xxxx
+  |Status: <status>
+  |[Print test receipt]
+  |
+  +--------------------------------------------
+  補充說明:
+    - Status 顯示 Receipt printer 目前狀態.
+      可能是: Ready, Disconnected, Paper Jam, Controller error, ....
+    - 於此頁, 當 Receipt printer 狀態為 Ready, 可以按下 [Print test receipt] 來列印測試收據.
+
+- 功能: Reset
+  +--------------------------------------------
+  |Reset the unresolved transaction
+  |(other descriptions)
+  |[ TX Reset ] 
+  |
+  |Restore to factory default
+  |[ Factory Reset ]
+  |
+  +--------------------------------------------
+  補充說明:
+    - 當按下 [TX Reset], 將進行如下動作:
+      清除本地端 penging 入金/出金 TX 紀錄 (at NVRAM).
+      清除 printer (CUPS) output queue
+      用於交易已經發生不同步/錯亂情況.
+    - 當按下 [Factory Reset], 除了執行 [TX Reset] 動作, 也會將所有設定資料回復到出廠值.
+      用於將整個機台復原至出廠狀況, 或是發生重要檔案或相關設定檔毀損時或可透過此來修復.
+    - 當按下按鈕, 都需要再顯示警告訊息以及確認.
+
+- Kernel 即時訊息: 懸浮顯示訊息於螢幕, 用於警告、提醒機台系統狀況予玩家或營運人員, 以利狀況排除.
+  - 採用懸浮半透明視窗(Post-It) 方式於螢幕角落顯示, 會持續顯示 4 秒後淡出消失, 如果狀況依舊, 會緊接著再次顯示下一個 4 秒.
+  - 相關事件包括:
+    - 主門被打開??  <-- 不用做此.
+    - 與 BA / 印表機失連
+    - 印表機卡紙 / 快沒紙 / 缺紙
+    - 紙鈔機錢箱被取出 / Stack快滿 / 已滿
+    - 與系統斷線 / API登入驗證失敗
+    - 其它軟體錯誤: 必要軟體請求無法達成、檔案失去, 被竄改.
+    - 其它 I/O 錯誤: 磁碟滿載、記憶體不足等、網路 Lag 嚴重/不穩定, etc.
+
+- 啟動流程:
+
+- 收據格式:
+  - 欄位: 抬頭, 交易代號(TX), 機台帳號, 金額, 時間(Local柬埔寨)
+         條碼: TX+帳號+金額+CHECKSUM 構成一維條碼. (optional)
+  - Title/抬頭: 顯示 Basic data/Title 資訊.
+  - TX No./交易代號: 顯示出金交易代號.
+  - Account/機台帳號: 顯示本機台用於登入之帳號.
+  - 金額: 顯示收據金額. 格式依據設定檔, 例如: $23,223
+  - 時間: 顯示列印時間. 格式依據設定檔, 例如: MM/DD/YYYY HH:mmSS
+
+
+
+<End of Document>
