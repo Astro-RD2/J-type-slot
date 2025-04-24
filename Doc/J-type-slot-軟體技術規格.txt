@@ -1,4 +1,4 @@
-J-Type Slot 開發系統建置
+J-Type Slot 軟體技術規格
 =============================================
 專案概述:
 - 永宙公司委託泰偉電子合作開發一 J型老虎機
@@ -76,9 +76,9 @@ VMware Image 版本控制
     右下出現齒輪, 選擇 Ubuntu on Xorg, 使切換到使用 X11 而非內定的 Wayland
 
 (2) 使開機後能自動以 root 帳號登入 GNOME/GDM
-  參考 https://hackmd.io/@Cyui/B1YnFwT8R
-  root 密碼: !qaz2wsx 
-  設定完成重開機
+  - 參考 https://hackmd.io/@Cyui/B1YnFwT8R
+    root 密碼: !qaz2wsx 
+    設定完成重開機
 
 (3) 更新/修補系統並安裝 sshd
   $ apt update
@@ -184,7 +184,7 @@ VMware Image 版本控制
   所有 Ubuntu Setting 的內容都儲存於 ~/.config/dconf/*
 
 (14) 安裝需要的 python 套件
-     重要! 自 python 專案仍需要維護自己的 requirements.txt
+     重要! 各自 python 專案仍需要維護自己的 requirements.txt
   $ pip install requests
   $ pip install flask
   $ pip install selenium
@@ -250,9 +250,13 @@ VMware Image 版本控制
 - Log rotate 設定
   (todo)
 
-
 - Screen 設定 (Portrait, 原本螢幕順時針轉 90 度)
-  Ubuntu settings => Display => Portrait Right
+  - Ubuntu settings => Display => Portrait Right
+  - (optional) 讓登入畫面也
+    參考: https://askubuntu.com/questions/1003964/how-to-rotate-login-screen-in-gdm3  
+    $ cp /root/.config/monitors.xml /var/lib/gdm3/.config/
+    $ chown gdm:gdm /var/lib/gdm3/.config/monitors.xml
+    $ restart or $ systemctl restart gdm3
 
 
 ============================================================
@@ -371,7 +375,7 @@ VMware Image 版本控制
     如果寫入時已經斷線, 會發出如下 Exception:
       serial.serialutil.SerialException: write failed: [Errno 5] Input/output error
       OSError: [Errno 5] Input/output error
-  - 以下為 ICT SP1 各命令整理.
+  - 以下為 ICT SP1 各命令整理:
     - 初始化 (每當斷線重連, 進行一次即可):
       - 印表機恢復初始設定: 無底線、取消反白、單倍寬、單倍高、16x24 字型、ASCII
         編碼模式、字元靠左對齊、一維條碼位置重置、一維條碼高 140 點
@@ -386,12 +390,12 @@ VMware Image 版本控制
         send: 1B 23  (ESC #)
         recv: 1B 23  (ESC #)  <-- 如果成功的話.
     - 狀態:
-      - 獲得印表機資訊:  (失敗, 而且干擾列印)
+      - 獲得印表機資訊:  (失敗, 而且干擾列印, 勿呼叫)
         send: 1B 28 54
         recv: firmware_version CHAR(20),
               checksum BYTE(2), 先 low, 然後 high byte
               pull_prev BYTE(1) 0=無防拉, 1=防拉
-      - 印表機是否支援半裁:  (失敗, 而且干擾列印)
+      - 印表機是否支援半裁:  (失敗, 而且干擾列印, 勿呼叫)
         send: 1B 28 59
         recv: 0=有支援, 1=無支援.
       - 讀取印表機狀態:   (成功)
@@ -421,6 +425,14 @@ VMware Image 版本控制
       - 設定一維條碼對照文字顯示位置
         send: 1D 48 n
         n=0(none), 1(above), 2(below), 3(both)
+      - 設定字型大小
+        send: 1B 4D n
+          n=0 8x13 字型
+          n=1 16x24 字型
+          n=2 24x36 字型
+          n=3 32x48 字型
+          n=4 48x72 字型
+        recv: (none)
       - 內定輸出 ASCII 字型. 可切換至 utf32 (4-byte, big-endian)
         send: 1C 28
         recv: (none)
@@ -513,7 +525,7 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
     (base) $ pip install selenium
     注意! Firefox 驅動程式已經存在於 /snap/bin/firefox.geckodriver, 無須另外安裝.
     更改:
-    因為 Firefox 改用 apt 方式安裝, 原 geckodriver 已經不存在, 所以請自下面載入, 並先放到與 python 同一目錄位置.
+    因為 Firefox 改用 apt 方式安裝, 原 geckodriver 已經不存在, 所以請自下面載入, 並先放到與 AstroKernel 同一目錄位置.
     https://github.com/mozilla/geckodriver/releases
     -------------------------------------------------
     範例:
@@ -534,7 +546,10 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
     -------------------------------------------------
     https://stackoverflow.com/questions/28431765/open-web-in-new-tab-selenium-python
     self.selenium.switch_to.window(window_name=window_name)   <-- 切換 between tabs
-
+  - 如何偵測該網頁失敗.
+    - 可以安裝 Firefox addon "Retry Page Load"
+    - 利用 Selenium 內建的 EC 機制.
+    
 
 - 研究: 如何透過 Python 程式來模擬實體按鍵輸入 (鍵盤/keyboard)
   - https://stackoverflow.com/questions/51406276/simulating-mouse-and-keyboard-input-on-wayland-and-x11
@@ -598,6 +613,7 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
         https://github.com/Kalmat/EWMHlib?tab=readme-ov-file
         https://ewmh.readthedocs.io/en/latest/ewmh.html#ewmh-class
       - 程式碼:
+        # CASE 1: 透過 EWMH 模組找尋 Firefox 並取得其行程相關資訊.
         from ewmh import EWMH
         ewmh = EWMH()
         wins = ewmh.getClientList()
@@ -607,14 +623,22 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
           print(wm_class, wm_title)
           # 是否是 firefox
           if wm_class[0] == 'Navigator' and wm_class[0] == 'firefox':
-            print('This is firefox "%s"' % wm_title)
-        
+            print('This is firefox title:"%s"' % wm_title)
+            print('The XWIN id=%d, Process id=%d' % (w.id, ewmh.getWmPid(w))
+            print('The process of firefox is', w.id)
+
+        # CASE 2: 自開啟瀏覽器的 Selenium 模組來得知瀏覽器 process id.
+        from selenium import webdriver
+
+        driver = webdriver.Firefox(executable_path=r'C:\WebDrivers\geckodriver.exe')
+        # or driver = webdriver.Firefox(executable_path=r'./geckodriver')
+        my_dict = driver.capabilities
+        print("PID of the browser process is: " + str(my_dict['moz:processID']))
+
+        # CASE 3: 取得目前 active window.
         w = ewmh.getActiveWindow()  <-- 取得目前 active window. 等同 ewmh.setProperty('_NET_ACTIVE_WINDOW', myWindow)
         ewmh.display.flush()        <-- 需要此使生效.
         
-        # 以下尋找 firefox
-      
-
     - 獲得桌面主要 window 的 id
       概念上, 找尋 root 找尋其 children.
       - 找尋桌面上特定的視窗.
