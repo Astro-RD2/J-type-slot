@@ -1,0 +1,968 @@
+J-Type Slot 開發系統建置
+=============================================
+專案概述:
+- 永宙公司委託泰偉電子合作開發一 J型老虎機
+  2025/4/2 正式立案. 預計開發時間 1 ~ 2 個月.
+
+Version 1.0 - 2025/4/24 自 J-type-slot-軟體系統需求與設計.txt 獨立出來.
+
+
+
+================================================================
+1. 型態管制
+================================================================
+1. 開發機 (VMware image):
+  https://astroinc-my.sharepoint.com/:u:/g/personal/killbug_astrocorp_com_tw/Edr6MEapAIBJoeK-pBC8ZJoB1XRcwTlGXizxw2n8xjPwrQ?e=8UctfJ
+  使用 VMware open 與執行即可.
+  會自動使用 root 登入.
+  如果要使用 ssh 登入, 於 VM 內開啟 Terminal, 執行 "ip a" 得知 IP, 然後使用 ssh client 登入 guest/123456 
+  然後執行 "su -", root 密碼 (兩排)
+
+2. GitHub 專案
+  - 名稱: Astro-RD2 / J-type-slot
+  - 將專案 clone 至你的本地電腦進行開發:
+    $ git clone https://github.com/Astro-RD2/J-type-slot.git
+    已經設定部門同事都可 read/write, 其他人只能read
+    使用概念上, 將其當過去 Subversion 使用, 且直接  commit 至 branch 'main' 即可.
+
+3. Python source file 格式: Unix, UTF-8
+  且開頭必須要有如下兩行:
+  #!/usr/bin/env python
+  #-*- coding:UTF-8 -*-
+
+
+VMware Image 版本控制
+----------------------------------
+1. J-type-Slot-Dev-v1
+   J-type-Slot-Dev-v1.1rc  
+      修正 ~/.bashrc_aliases => ~/.bash_aliases
+
+
+============================================================
+2. 開發機建置 (PC/VMware for development)
+============================================================
+2.1 開發機規劃重點
+  - 使用 Ubuntu 24.04 標準安裝. 
+  - 使能夠於開機時自動使用 root 登入 Gnome/GDM (圖形介面).
+  - 設定帳號/密碼: 
+      guest/123456   僅供 ssh client 登入用.
+      root/!qaz2wsx  此為 root 帳號/密碼. 所有開發作業、執行環境等皆於此.
+  - 如果使用 ssh client, 限制只能使用 guest 帳號登入. 
+    登入後如果要轉換成 root 使用者, 執行 'su -' 然後輸入 root 密碼即可.
+  - 切換內定的 Wayland 至 X protocol, 此很重要, 要不然很多滑鼠模擬、鍵盤模擬都會失敗.
+  - 使用 Firefox 瀏覽器為主.
+  - Python 不另建虛擬環境.
+    - 相關模組/套件一律使用 pip 進行安裝.
+      例如模組名稱xyz, 則安裝方式:
+      $ pip install xyz
+    - 各情況套件安裝位置:
+      - 於 Ubuntu 非虛擬環境下, 使用 pip 安裝, 套件位置  /usr/lib/python3/dist-packages/
+      - 於虛擬環境下, 使用 pip 安裝, 套件位置: <venv dir>/lib/python3.12/site-packages/
+      - 非上述情況 (例如使用 apt install, yum install, 非 Ubuntu pip), 套件位置 /lib/python<version>/site-packages/
+  - Embedded 版本將自開發機版本修改過去.
+
+2.2 開發機安裝設定步驟
+(1) 使用 Ubuntu 24.04 LTS 進行標準安裝.
+  鍵盤/英文: US
+  時區: Canbodia (柬埔寨, Asia/Phnom Penh)     (未來考慮使用 UTC, 然後利用系統參數 offset +7)
+  What apps do you like ....: 選擇 Default selection
+  勾選 Install third-party software for graphics and Wi-Fi hardware
+  勾選 Download and install support for additional media formats
+  Computer name: JTYPE-DEVCOM
+  Username: guest
+  Password: 12345678
+  確認勾選 Require my password to log in
+  第一次登入選 guest
+    右下出現齒輪, 選擇 Ubuntu on Xorg, 使切換到使用 X11 而非內定的 Wayland
+
+(2) 使開機後能自動以 root 帳號登入 GNOME/GDM
+  參考 https://hackmd.io/@Cyui/B1YnFwT8R
+  root 密碼: !qaz2wsx 
+  設定完成重開機
+
+(3) 更新/修補系統並安裝 sshd
+  $ apt update
+  $ apt upgrade
+
+(4) 移除 snap firefox, 改安裝 DEB firefox
+  參考步驟: https://www.omgubuntu.co.uk/2022/04/how-to-install-firefox-deb-apt-ubuntu-22-04
+  步驟有點複雜, 但還算明確.
+  如果不進行此, 會發生對 keyboard input 失效的情況. 原因是 snap 內的 firefox 與部分套件的整合不一致.
+  測試:
+  # 確認可以自命令列執行瀏覽器 (browser).
+  $ firefox -kiosk -private-window "https://www.google.com"   可以成功全畫面、隱私分頁. (按下 Alt-F4 關閉應用程式)
+
+(5) 安裝 sshd
+  $ apt install ssh
+
+(6) (不要進行此)調整 /etc/ssh/sshd_config, 使能透過 ssh client 來遠端執行 X app
+  $ vi /etc/ssh/sshd_config
+  -----------------------------------
+  ...
+  X11Forwarding yes
+  X11DisplayOffset 10 
+  -----------------------------------
+  上述測試結果失敗.
+
+(7) 得知 IP 位址
+  - 測試可自 Host OS 發出 ssh client 連線至此 Virtual machine.
+    $ ip a
+    ...
+    inet 192.168.153.128/24      <-- 於 Host OS 使用 ssh client 連接此 192.168.153.128
+    ...
+  - 建議可使用 Share folder, 方便共享開發目錄.
+
+(8) 使 Python 易用
+  $ apt install python3-pip
+  $ apt install python-is-python3    <-- 不要此. 因為 virtual environment 會自動產生 'python' 至對應 python 版本
+  $ apt install python3-venv
+
+(9) 建立 Python 虛擬環境 base
+  $ mkdir /root/py-venv/
+  $ python -m venv /root/py-venv/base
+  $ source /root/py-venv/base/bin/activate   <-- 啟動虛擬環境. (可放在開機批次檔)
+  $ deactivate    <-- 結束虛擬環境
+  方便切換至 python virtual environment, 故進行如下建置:
+    $ echo "alias py-activate-base='source /root/py-venv/base/bin/activate'" >> /root/.bashrc_aliases
+    $ py-activate-base   <-- 之後執行此即可切換.
+    $ vi /root/.profile    # 編輯 /root/.profile, 末尾加上
+    source /root/py-venv/base/bin/activate
+
+(10) 安裝需要的 utility
+  $ sudo apt install yad
+  $ apt install vim      # 需要安裝此. 避免 arrow 出問題.
+  $ echo ':color desert' >> /etc/vim/vimrc.local    # 使顏色較明顯. (否則 python 註解會非常暗)
+
+(11) 設定聲音
+  聲音方面, 內定安裝後會沒有聲音 (某些 bug), 需進行如下設定:
+  以下, 我已經使用 PulseAudio 安裝成功. 但後來才發現 Ubuntu 原生使用 PipeWire.
+  # 參考 https://askubuntu.com/questions/1511648/audio-not-working-ubuntu-24-04
+  # 參考 https://askubuntu.com/questions/1146026/problem-with-pulseaudio-at-startup-it-doesnt-start
+  $ apt install pulseaudio
+  $ apt install alsa-utils         # (optional)
+  # 修改 /etc/modprobe.d/alsa-base.conf, 末尾加上如下, 以修正 driver 問題):
+  -------------------------------
+  options snd-hda-intel model=auto
+  blacklist snd_soc_avs
+  -------------------------------
+  # 使 pulseaudion 自動啟動, 供 firefox 輸出.
+  $ vi /lib/systemd/system/pulseaudio.service   <== 建立新檔案:
+    --------------------------------------
+    [Unit]
+    Description=PulseAudio Sound System
+    After=network.target
+
+    [Service]
+    Type=simple
+    ExecStart=/usr/bin/pulseaudio --system --daemonize=no --disallow-exit --disable-shm --no-cpu-limit
+    User=root
+    Group=root
+    Restart=on-failure
+
+    [Install]
+    WantedBy=multi-user.target
+    --------------------------------------
+  $ systemctl --system enable pulseaudio
+  $ systemctl --system start pulseaudio
+  $ sudo adduser root pulse-access
+  重開機, 應該搞定.
+
+(12) 關掉 Wayland, 使用 X 
+  $ sudo vi /etc/gdm3/custom.conf
+    ------------------------------------------
+    WaylandEnable = false
+    ------------------------------------------
+
+(13) 相關桌面設定 (Ubuntu Setting)
+  - Accessibility=>Typing=>Repeat Keys ^
+    Speed to 80% Fast, 
+    Delay to 10% Short
+  - Power=>
+      Power Mode => Performance
+      Power Saving=>Screen Blank => Never
+  - Region & Language => Format 選擇 United States
+  所有 Ubuntu Setting 的內容都儲存於 ~/.config/dconf/*
+
+(14) 安裝需要的 python 套件
+     重要! 自 python 專案仍需要維護自己的 requirements.txt
+  $ pip install requests
+  $ pip install flask
+  $ pip install selenium
+  $ pip install cryptocode
+  $ pip install pynput
+  $ pip install keyboard
+  $ pip install keyboard
+
+
+============================================================
+3. Embedded 環境建置 (J-type-slot embedded PC)
+============================================================
+- 磁碟分割區、目錄、與檔案安排
+  原始 VLT
+  Partition    Size     Mount point     Property
+  -----------  -------  --------------  ----------------
+  /dev/sda1    10G      /               ext2, readonly
+  /dev/sda2             (Extended)      Containing /dev/sda5, /dev/sda6
+  /dev/sda3    10G      /var            ext4, read/write
+  /dev/sda4             swap
+  /dev/sda5    10G      /var/opt        ext4, read/write, noatime, barrier=0, data=writeback, nobh
+  /dev/sda6    81.2G    /opt            ext4, read/write or readonly
+  -----------  -------  ---------------  ----------------
+  
+  這個專案 J-type slot:
+  Partition    Size     Mount point      Property
+  -----------  -------  ---------------  ----------------
+  /dev/sda1    20G      /                ext4, readonly
+  /dev/sda2             (Extended)       Containing /dev/sda5, /dev/sda6
+  /dev/sda3    20G      /var             ext4, read/write
+  /dev/sda4             swap
+  /dev/sda5    10G      /var/opt        ext4, read/write, noatime, barrier=0, data=writeback, nobh
+  /dev/sda6    81.2G    /opt            ext4, read/write or readonly
+  -----------  -------  ---------------  ----------------
+  TMP          /var/tmp???      Shared memory
+
+- Directory structure and File
+  - Diretories structure
+    /root/
+    /root/astro/
+    /root/astro/content/                                Downloadable game/content package 所在位置.
+    /root/astro/data/ --> /var/astro/data/              程式公用資料與公用設定檔案位置
+    /root/astro/nvram/ --> /var/astro/nvram/            nvram 所在位置.
+    /root/astro/factory_default/                        出廠值存放位置.
+    /var/astro/etc/                                     可變設定檔位置 (網路, hostname, 防火牆等)
+  - Files  
+    /root/astro/start.sh                                  
+    /root/astro/content/AstroKernel/*                      
+    /root/astro/content/OperatorMenu/*
+    /root/astro/factory_default/etc.tgz                 tar zcvf etc.tgz /var/astro/etc/
+    /root/astro/factory_default/root_.config.tgz        tar zcvf etc.tgz /root/.config/
+    /etc/(certain files) --> /var/astro/etc/(certain files)
+    /root/astro/data//setting.ini --> /var/astro/data/setting.ini    目前設定.
+    /var/astro/data/setting.ini-default                 內定(出廠)設定檔
+
+- Configuration file
+  - 設定檔案名稱與位置 (Runtime/Embedded): 
+    /root/astro/data/setting.ini (實際位置 /var/astro/data/setting.ini)
+    /var/astro/data/setting.ini-default  <-- 不更動此, 供回復出廠值.
+  - 原始定義/來源:
+    C:\Work\AsProjects\J-type-slot\Src\Configuration-files-templete\setting.ini-default
+
+- Log rotate 設定
+  (todo)
+
+
+- Screen 設定 (Portrait, 原本螢幕順時針轉 90 度)
+  Ubuntu settings => Display => Portrait Right
+
+
+============================================================
+4. 程式技術使用
+============================================================
+- 實體按鍵對應與處理邏輯
+  - 實體按鍵與鍵盤對應表
+    -- KEYBOARD -------------------------------
+    實體按鍵   鍵盤對應              轉換/動作                 說明
+    --------  ------------------- ------------------------ -----------------------
+    SPIN      [Ctrl-ALT-Enter]    於遊戲中轉換成[SPACE]送出   啟動一局遊戲
+    CASHOUT   [Ctrl-ALT-P]                                 進行 Payout
+    HOME      [Ctrl-Alt-HOME]     引導目前網頁至首頁.         用來回到遊戲首頁.
+    VOLUME+   [Ctrl-ALT-'+']      amixer set Master 10%+   提升音量
+    VOLUME-   [Ctrl-ALT-'-']      amixer set Master 10%-   降低音量
+    REFRESH   [Ctrl-ALT-R]        滑鼠點選 Refresh 圖案      觸發網頁中央獲取最新 credits 數值的動作
+    -- KEY -------------------------------
+    OPERATOR  [Ctrl-ALT-O]                                 於 HOME 狀態, 可切換至 OPERATOR 選單.
+  - 補充說明:
+    當按下 [Refresh], 如果目前位於遊戲瀏覽器/遊戲, 送出空白(' ') 至遊戲瀏覽器.
+
+- 登入遊戲 API server, 取得 token 之程式範例
+  import requests
+  from requests_toolbelt.utils import dump      # for debug
+
+  url = 'https://dev-api.n1s168.com/api/v1/user/login/'
+  headers = {"Content-Type": "application/json"}
+  data = { "account": "ITgame01", "password": "ITgame01" }
+  
+  try 
+    response = requests.post(url, json=data, headers=headers)
+    # if success, handle it ...
+    if response.status_code == 200:
+      json_data = response.json()    # 取得 json 物件.
+  except
+    # error
+
+  # below two rows, is for debug only
+  data = dump.dump_all(response)
+  print(data.decode('utf-8'))
+  
+  print(response.status_code)  # 取得回應 code, 如果為 '200' 表示成功
+  print(response.json())  # 取得回應 body
+
+- 按鍵系統攔截與模擬:
+  考慮使用 XLib 或使用 pynput. 目前使用 keyboard, 會有很多問題.
+  (base) $ pip install pynput
+  (todo)
+
+- 瀏覽器控制與監視
+  原則上將使用
+  (todo)
+
+- 彈出式懸浮訊息:
+  透過 yad utility 來達成.
+  $ sudo apt install yad
+  參考資料:
+    https://smokey01.com/help/yad-tips-0.0.2.html
+    https://yad-guide.ingk.se/examples/examples.html
+  例如: 顯示一 popup 訊息, 五秒後自動消失.
+  $ yad --on-top --no-buttons --undecorated --borders=50 --text-align=center --timeout=5 --text="Hello World!" &
+
+- 透過 ICT SP1-BDx 印表機列印收據
+  - 印表機本身為 USB 介面. 於作業系統內會顯化 /dev/ttyACM0 這個軟體介面. 將其當作 serial port 來操作即可.
+    注意! 如果未連接, 則 /dev/ttyACM0 檔案不存在.
+  - 存取 serial python 程式參考, 安裝
+    參考: https://blog.csdn.net/Electrical_IT/article/details/107201561
+    $ pip install pyserial
+  - 範例程式:
+    --------------------------------------------------------------------
+    import serial
+    import time
+    
+    ser = serial.Serial('/dev/ttyACM0', 115200, 8, 'N', 1, xonxoff=True, timeout=0.5, inter_byte_timeout=0.1, write_timeout=1)
+
+    # restore to factory default: 無底線、取消反白、單倍寬、單倍高、16x24 字型、ASCII 編碼模式、字元靠左對齊、一維條碼位置重置、一維條碼高 140 點: 1B 40
+    # (no response)
+    ser.write(b'\x1b\x40')
+
+    # Reset printer  (Just reset inner task, no setting changed)
+    # (no response)
+    ser.write(b'\x1b\x72\x00')
+
+    # Switch to ESC/POS protocol
+    # return \x1b\x23 (ESC #) if success
+    ser.write(b'\x1b\x23')
+    a = ser.read(64)
+    print('protocol:', a)
+
+    # set 1D-barcode text position
+    ser.write(b'\x1d\x48\x02')
+
+    # get whether supporting half cut (無返回, 失敗, 且造成列印失敗)
+    ser.write(b'\x1b\x28\x59')
+    a = ser.read(64)
+    print('support half cut:', a, len(a))
+    
+    # read printer information  (無返回, 失敗)
+    ser.write(b'\x1b\x28\x54')
+    a = ser.read(64)
+    print('info:', a)
+    
+    # read printer status  (會成功)
+    ser.write(b'\x1d\x61')
+    a = ser.read(64)
+    print('status:', a)
+
+    ser.write(b'Hello world\n')
+    ser.write(b'\x1d\x6bA\x10\x000123456789ABCDEF')    # print barcode
+    ser.write(b'\x1b\x4d\x02Hello world\n\x1b\x4d\x03Hello world\n\f')  # or \r
+
+    ser.flush()
+    ser.close()
+    print('end.')
+    --------------------------------------------------------------------
+    如果寫入時已經斷線, 會發出如下 Exception:
+      serial.serialutil.SerialException: write failed: [Errno 5] Input/output error
+      OSError: [Errno 5] Input/output error
+  - 以下為 ICT SP1 各命令整理.
+    - 初始化 (每當斷線重連, 進行一次即可):
+      - 印表機恢復初始設定: 無底線、取消反白、單倍寬、單倍高、16x24 字型、ASCII
+        編碼模式、字元靠左對齊、一維條碼位置重置、一維條碼高 140 點
+        send: 1B 40
+        recv: (none)
+        (快)
+      - Reset: 使機器回到 idle 狀態 (不會更改設定)
+        send: 1B 72 01
+        recv: (none)  
+        之後應下達 'ESC #'
+      - 切換成使用 ESC/POS protocol
+        send: 1B 23  (ESC #)
+        recv: 1B 23  (ESC #)  <-- 如果成功的話.
+    - 狀態:
+      - 獲得印表機資訊:  (失敗, 而且干擾列印)
+        send: 1B 28 54
+        recv: firmware_version CHAR(20),
+              checksum BYTE(2), 先 low, 然後 high byte
+              pull_prev BYTE(1) 0=無防拉, 1=防拉
+      - 印表機是否支援半裁:  (失敗, 而且干擾列印)
+        send: 1B 28 59
+        recv: 0=有支援, 1=無支援.
+      - 讀取印表機狀態:   (成功)
+        印表機在 idle 狀態下才有效.
+        send: 1D 61
+        recv: two bytes data
+          bit0=1 cover open or no paper on thermal head
+          bit1=1 roller paper empty
+          bit2=1 cutter malfunction
+          bit3=1 anti-pulling sensor masked  (只適用於有防拉機型)
+          bit4=1 check-sum error
+          bit5=1 no SD card ready
+          bit6=1 abnormal temperature
+          bit7=1 SD file error
+          --- hight byte below
+          bit8=1 roller paper low level warning
+          bit9=1 out paper sensor mask  (for model NNX only)
+          bit10=1 paper jam
+          (all others reserved)
+        此狀態讀取很慢, 與前後指定最好間隔 1 sec. 且如果下達時機器正在列印或非 idle, 有可能完全不回應.
+    - 設定
+      - 設定 1D barcode 細線與粗線寬度
+        send: 1B 77 m n
+        recv: (none)
+        m=1~10 (細線寬度, default 2)
+        n=2~5  (粗線/細線寬度比, default 2)
+      - 設定一維條碼對照文字顯示位置
+        send: 1D 48 n
+        n=0(none), 1(above), 2(below), 3(both)
+      - 內定輸出 ASCII 字型. 可切換至 utf32 (4-byte, big-endian)
+        send: 1C 28
+        recv: (none)
+        範例:
+        --------------------------------------------------------------------
+        #-*- coding:UTF-8 -*-
+        ...
+        ser.write(b'\x1c\x28')
+        a = '列印文字'.encode('utf-32')    # a 將為 binary 字串.
+        ser.write(a)   將 utf32 字串輸出至印表機.
+        --------------------------------------------------------------------
+    - 列印
+      - FormFeed: 告知一頁結束, 並進行全裁切.
+        send: 0C
+        recv: (none)
+      - Carriage Return: 告知一頁結束, 並進行半裁切. (只適用於無防拉機型)
+        send: 0D
+        recv: (none)
+
+
+
+================================================================
+Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
+針對需要的技術, 條列其內容與可能解決方案/參考資料如下.
+================================================================
+- 技術獲得 ToDo/Memo
+  - ...
+
+- 需要保持 internet 時間同步
+  - 柬埔寨時區: UTC +7, Indochina Time (ICT)
+    IANA 時區識別代號是 Asia/Phnom_Penh
+  - $ sudo timedatectl set-timezone <your_time_zone>
+
+- Ubuntu 自動以 root 登入 GNOME
+  - https://hackmd.io/@Cyui/B1YnFwT8R
+
+- 有關網頁登入
+  - 註冊/取得驗證token
+    Client                       Server
+    ------                       ------
+    Account, ------------------>
+    HASH(PW) 
+             <------------------ TOKEN (jwt 物件)
+
+  - 實際登入方式
+    方式一:
+      將 <TOKEN> 接於 <URL of 登入頁面> 之後
+    方式二 (不太好):
+      將 <TOKEN> 儲存至 Local cookie
+      於登入頁面, 相關 script 會先檢查並讀取指定 local cookie 並用該 token 來登入.
+  - TOKEN 格式參考:
+    - JWT (JSON Web Token), 可還原
+    - 或 BASE64(HASH(內容)), 不可還原
+
+- 如何使用命令列程式調節音量: (need to try)
+  - https://unix.stackexchange.com/questions/21089/how-to-use-command-line-to-change-volume
+  - command examples:
+    $ amixer set Master 50%
+    $ amixer -D pulse set Master 50%
+    $ amixer set Master 10%+    音量增加 10%
+    $ amixer set Master 10%-    音量減少 10%
+    $ amixer set Master mute    靜音
+    $ amixer set Master unmute  取消靜音
+    $ amixer set Master toggle  
+  - 如果瀏覽器內遊戲將音量關閉, 我方是否需要得知.
+
+- 透過命令列啟動瀏覽器 (browser):
+  - Ubuntu 自動開啟 Firefox 並且全螢幕顯示
+    firefox -kiosk -private-window [target URL]
+    firefox -kiosk -private-tab [target URL]
+    命令列參數參考: https://wiki.mozilla.org/Firefox/CommandLineOptions#-new-tab_URL
+    可開啟多個 Window, 每個 Windows 可以有多個 Tab
+  - (不考慮)
+    Ubuntu 自動開啟 Google Chrome 並且全螢幕顯示
+    chromium-browser https://blog.clarence.tw --start-fullscreen --incognito
+    https://blog.clarence.tw/2023/02/26/ubuntu-%E8%87%AA%E5%8B%95%E9%96%8B%E5%95%9F-google-chrome-%E4%B8%A6%E4%B8%94%E5%85%A8%E8%9E%A2%E5%B9%95%E9%A1%AF%E7%A4%BA/
+    說明:
+      --incognito: 表示開啟隱私/無痕分頁.
+
+- 透過程式來監視與控制被啟動的瀏覽器:
+  - Python webbrowser.py 模組
+    https://stackoverflow.com/questions/5150610/how-to-simulate-mouse-click-with-the-webbrowser-control
+    https://medium.com/@chensheep1005/python-%E9%96%8B%E5%95%9Fbrowser-540dae3ad344
+  - Python selenium import webdriver
+    Selenium 官網: https://www.selenium.dev/documentation/webdriver/browsers/firefox/
+    參考: https://steam.oxxostudio.tw/category/python/spider/selenium.html#a1
+    解決無法載入 profile 問題: https://stackoverflow.com/questions/72405117/selenium-geckodriver-profile-missing-your-firefox-profile-cannot-be-loaded
+    -------------------------------------------------
+    安裝:
+    (base) $ pip install selenium
+    注意! Firefox 驅動程式已經存在於 /snap/bin/firefox.geckodriver, 無須另外安裝.
+    更改:
+    因為 Firefox 改用 apt 方式安裝, 原 geckodriver 已經不存在, 所以請自下面載入, 並先放到與 python 同一目錄位置.
+    https://github.com/mozilla/geckodriver/releases
+    -------------------------------------------------
+    範例:
+    from selenium import webdriver
+    from selenium.webdriver.common.keys import Keys
+    from selenium.webdriver.support import ui
+    from selenium.webdriver.common.by import By
+    cService = webdriver.FirefoxService(executable_path='/snap/bin/firefox.geckodriver')        # <-- always have this file in that place
+    driver = webdriver.Firefox(service = cService)
+    #driver.get("https://www.google.com")
+    driver.get('https://demo.n1s168.com/#/')
+    title = driver.title()
+    driver.implicitly_wait(0.5)   # <-- wait for page to load
+    text_box = driver.find_element(by=By.NAME, value="my-text")
+    submit_button = driver.find_element(by=By.CSS_SELECTOR, value="button")
+    text_box.send_keys("Selenium")
+    submit_button.click()
+    -------------------------------------------------
+    https://stackoverflow.com/questions/28431765/open-web-in-new-tab-selenium-python
+    self.selenium.switch_to.window(window_name=window_name)   <-- 切換 between tabs
+
+
+- 研究: 如何透過 Python 程式來模擬實體按鍵輸入 (鍵盤/keyboard)
+  - https://stackoverflow.com/questions/51406276/simulating-mouse-and-keyboard-input-on-wayland-and-x11
+  - 以下討論僅限於 X11 環境: 
+  - 可使用若干程式以及 Python 如 xte, xdotool, xvt 等來方便模擬 (X11 only)
+  - 可以使用 XLib 的 XSendEvent, XWrapPointer 來模擬. (X11 only)
+  - Python module keyboard   <-- 我們使用此. 
+    official: https://github.com/boppreh/keyboard?tab=readme-ov-file#keyboard.on_press
+    import keyboard
+    攔截鍵盤:
+    
+    - 對於 keyboard.write(str)  字串內容的字元集合限制, 超出會發生錯誤. (基本上無大寫、無驚嘆號'!')
+    請參考如下: https://github.com/boppreh/keyboard/issues/211
+
+  - 使用 Python xlib:
+    - 參考與安裝
+      official: https://python-xlib.github.io/python-xlib_14.html#X-Objects
+      https://paulsrandomcontent.blogspot.com/2013/09/moving-mouse-and-pressing-keys-in-x.html
+      https://github.com/python-xlib/python-xlib/tree/master/examples   <-- many example
+      https://gist.github.com/ssokolow/e7c9aae63fb7973e4d64cff969a78ae8   # 如何攔截 windows event
+      pip install xlib
+      pip install emwh   <-- 輔助.
+      import Xlib
+    
+    - 瀏覽所有 windows:
+      - 程式碼:
+        from Xlib import XK, display, ext, X, protocol
+        
+        def get_window(display, inst_name, class_name):
+          root_win = display.screen().root
+          window_list = [root_win]
+
+          while len(window_list) != 0:
+            win = window_list.pop(0)
+            win_name = win.get_wm_name()
+            win_class = win.get_wm_class()      # (instance, class_name)
+            #print('win: [','%x' % win.id, ',"', win_name, '","', win_class,'"]:', end='', sep='')
+            if win_class[0] == inst_name and win_class[1] == class_name:
+               return win.id
+            children = win.query_tree().children
+            if children != None:
+              #for child in children:
+              #  print('[#%x,"%s"]' % (child.id, child.get_wm_name()), end='')
+              #print()
+              window_list += children
+
+          return -1
+
+        d = display.Display()
+        win = get_window(d, sys.argv[1], sys.argv[2])
+        if win == -1:
+          print('not found')
+    
+      - 如果要尋找 firefox
+        win = get_window(d, 'Navigator', 'firefox')
+        if win == -1:
+          print('not found')
+    
+    - 透過 emwh 找尋所有可見視窗
+      - https://specifications.freedesktop.org/wm-spec/latest/
+        https://github.com/Kalmat/EWMHlib?tab=readme-ov-file
+        https://ewmh.readthedocs.io/en/latest/ewmh.html#ewmh-class
+      - 程式碼:
+        from ewmh import EWMH
+        ewmh = EWMH()
+        wins = ewmh.getClientList()
+        for w in wins:
+          wm_class = w.get_wm_class()
+          wm_title = ewmh.getWmName(w).decode('utf-8')  # 取得 title
+          print(wm_class, wm_title)
+          # 是否是 firefox
+          if wm_class[0] == 'Navigator' and wm_class[0] == 'firefox':
+            print('This is firefox "%s"' % wm_title)
+        
+        w = ewmh.getActiveWindow()  <-- 取得目前 active window. 等同 ewmh.setProperty('_NET_ACTIVE_WINDOW', myWindow)
+        ewmh.display.flush()        <-- 需要此使生效.
+        
+        # 以下尋找 firefox
+      
+
+    - 獲得桌面主要 window 的 id
+      概念上, 找尋 root 找尋其 children.
+      - 找尋桌面上特定的視窗.
+        from Xlib import XK, display, ext, X, protocol
+        d = display.Display()
+        window_list = [d.screen().root.query_tree().children]
+        for win in window_list:
+          wm_class = win.get_wm_class();
+          if wm_class[0] == 'Navigator' and wm_class[0] == 'firefox':
+            # found
+        
+      - 將游標所在視窗帶到前景
+        from Xlib import XK, display, ext, X, protocol
+        win = display.Display().screen().root.query_pointer().child
+        win.set_input_focus(X.RevertToParent, X.CurrentTime)
+        win.configure(stack_mode=X.Above)
+    
+      - 
+        if ( ( return_code = waitpid( p_proc->child_p_id, &exit_code, WNOHANG ) ) == -1 )
+        {
+            // it's possible only ECHILD and EINVAL  (impossible EINTR with WNOHANG)
+            _AsProcess_pa_release( p_proc );
+            return -3;       // -3=child process has gone away
+        }
+        else if ( return_code == 0 )
+        {
+            if ( kill( ((_AsProcess_shm_header *)p_proc->_p_shared_memory)->logic_child_p_id, SIGTERM ) == -1 )
+            {
+                // it's possible only EINVAL, EPERM, ESRCH.
+                if ( errno != ESRCH )
+                {
+                    perror( "kill" );
+                    _TRACE_ERROR( "AsProcess:kill (child process,SIGTERM) fail! (%d)\n", errno );
+                }
+            }
+            sleepmsec( 5 );
+            while ( ( return_code = waitpid( p_proc->child_p_id, &exit_code, WNOHANG ) ) == 0 )
+            {
+                bool_violent = 1;   // (TRUE)
+                (void)kill( ((_AsProcess_shm_header *)p_proc->_p_shared_memory)->logic_child_p_id, SIGKILL );
+                sleepmsec( 5 );
+            }
+            if ( return_code < 0 )
+            {
+                _AsProcess_pa_release( p_proc );
+                return -3;       // -3=child process has gone away
+            }
+        }
+    
+  - (討論)於 Wayland 環境:
+    原本可使用若干程式如 xte, xdotool, xvt 等來方便模擬, 
+    自 Ubuntu 21 之後, 內定使用 Wayland 而非 X protocol, 那些程式全部失效.
+    https://askubuntu.com/questions/1352062/xte-stopped-working-after-upgrading-to-ubuntu-21-04
+    在 Wayland 環境下, 必須改透過存取裝置檔案 /dev/input 的方式來進行模擬按鍵、滑鼠、搖桿等.
+    但要存取 /dev/input, 內定需要具有 root 權限.
+    - 透過 python3-uinput 模組
+      模組說明/官方:
+        https://github.com/pyinput/python-uinput/
+        https://pypi.org/project/python-uinput/
+        請參考目錄 examples/ 內容有使用範例.  
+        媒角: 發送第一個 key 之前, 需要 delay 約 10ms
+      安裝: $ sudo apt install python3-uinput
+    - 透過 ydotool utility
+      安裝: $ sudo apt install ydotool
+           $ sudo apt install ydotoold   <-- backend service
+           $ sudo ydotoold &             <-- launch backend daemon
+      執行範例:
+           $ sudo ydotool type 'hello world!'
+           $ sudo ydotool key ctrl-alt-f3
+           $ sudo ydotool key ctrl-backspace
+    - 如何使 non-root 使用者能存取 /dev/input
+      https://askubuntu.com/questions/520494/allow-one-process-access-to-dev-uninput-without-completely-compromising-securit
+      https://unix.stackexchange.com/questions/242222/read-from-dev-input-devices-without-root-privileges
+  - 實際測試, keyboard 有問題, 所以使用如下代用:
+    - pip install pynput
+      說明: https://pynput.readthedocs.io/en/latest/keyboard.html#monitoring-the-keyboard
+    - apt install python3-tk   <-- 必須
+      pip install pyautogui
+
+  - https://blog.csdn.net/Electrical_IT/article/details/107201561
+
+
+- Python request 範例:
+  參考: https://blog.apify.com/python-post-request/
+  ----------------------------------------
+  import requests
+  #(不需要) import json
+
+  url = 'http://example.com:8000/submit'
+  data = {'data1': 1, 'data2': 2}       # 使用字典(dict) 來描述資料.
+  print(data)
+  #(不需要) headers = {"Content-Type": "application/json"}
+  #(不需要) data_json = json.dumps(data)          # 轉換成 json 格式.
+  headers = {'Authorization': 'Bearer ' + auth_token}
+  try:
+      #(不需要) r = requests.post(url, data=data_json, headers=headers, timeout=15)   # default timeout is 30 seconds
+      r = requests.post(url, json=data, headers=headers, timeout=15)
+  except:
+      return   # if the requests.post fails (eg. the site is down) I want simly to return.
+               # Currenly it hangs up in the requests.post without raising an error.
+
+  # start to handle 'r'
+  if (r.text == 'stop'):
+      sys.exit()
+  ----------------------------------------
+  auth_token: 為 JWT object, 一般為之前自 API server 所獲得.
+  如果未給 timeout= 參數, default timeout is 30 seconds
+  如果直接於 requests 內使用參數 json=<dict object>, 內部直接會轉換成 json, 且 header 內自動加上  Content-Type: application/json
+
+  登入:
+  #HOST https://dev-api.n1s168.com
+  #ACCOUNT: ITgame01
+  #PASSWORD: ITgame01
+
+  import requests
+  from requests_toolbelt.utils import dump      # for debug
+
+  url = 'https://dev-api.n1s168.com/api/v1/user/login/'
+  headers = {"Content-Type": "application/json"}
+  data = { "account": "ITgame01", "password": "ITgame01" }
+  
+  response = requests.post(url, json=data, headers=headers)
+  data = dump.dump_all(response)
+  print(data.decode('utf-8'))
+  
+  print(response.status_code)
+  print(response.json())
+
+
+- 透過 serial 寫至印表機
+  - 參考: https://blog.csdn.net/Electrical_IT/article/details/107201561
+  - $ pip install pyserial
+  - import serial
+    ser = serial.Serial('/dev/ttyACM0', ....
+    if /dev/ttyACM0 not found, will raise FileNotFoundError:
+    如果寫入時已經斷線:
+      serial.serialutil.SerialException: write failed: [Errno 5] Input/output error
+      OSError: [Errno 5] Input/output error
+  - 範例程式:
+    --------------------------------------------------------------------
+    import serial
+    import time
+    
+    ser = serial.Serial('/dev/ttyACM0', 115200, 8, 'N', 1, xonxoff=True, timeout=0.5, inter_byte_timeout=0.1, write_timeout=1)
+
+    # restore to factory default: 無底線、取消反白、單倍寬、單倍高、16x24 字型、ASCII 編碼模式、字元靠左對齊、一維條碼位置重置、一維條碼高 140 點: 1B 40
+    # (no response)
+    ser.write(b'\x1b\x40')
+
+    # Reset printer  (Just reset inner task, no setting changed)
+    # (no response)
+    ser.write(b'\x1b\x72\x00')
+
+    # Switch to ESC/POS protocol
+    # return \x1b\x23 (ESC #) if success
+    ser.write(b'\x1b\x23')
+    a = ser.read(64)
+    print('protocol:', a)
+
+    # set 1D-barcode text position
+    ser.write(b'\x1d\x48\x02')
+
+    # get whether supporting half cut (無返回, 失敗, 且造成列印失敗)
+    ser.write(b'\x1b\x28\x59')
+    a = ser.read(64)
+    print('support half cut:', a, len(a))
+    
+    # read printer information  (無返回, 失敗)
+    ser.write(b'\x1b\x28\x54')
+    a = ser.read(64)
+    print('info:', a)
+    
+    # read printer status  (會成功)
+    ser.write(b'\x1d\x61')
+    a = ser.read(64)
+    print('status:', a)
+
+    ser.write(b'Hello world\n')
+    ser.write(b'\x1d\x6bA\x10\x000123456789ABCDEF')    # print barcode
+    ser.write(b'\x1b\x4d\x02Hello world\n\x1b\x4d\x03Hello world\n\f')  # or \r
+
+    ser.flush()
+    ser.close()
+    print('end.')
+    --------------------------------------------------------------------
+
+
+- ICT 印表機測試:
+  - 透過 console 的 echo -e 命令, 結果 no work
+    Reset: 1B 72 01
+    Switch to ESC/POS: 1B 23
+    切換回 ASCII: 1C 2E
+    印表機恢復初始設定: 無底線、取消反白、單倍寬、單倍高、16x24 字型、ASCII 編碼模式、字元靠左對齊、一維條碼位置重置、一維條碼高 140 點: 1B 40
+    列印濃淡: 1D 28 4B m
+    echo -e -n '\x1B\x72\x01' > /dev/ttyACM0
+    echo -e -n '\x1B\x23' > /dev/ttyACM0
+    echo -e -n '\x1C\x2E' > /dev/ttyACM0
+    echo -e -n 'Hello World\n\f' > /dev/ttyACM0
+    echo -e -n '\x1D\x61' > /dev/ttyACM0
+  - 改透過 pyserial 才成功. 
+  - 以下為 ICT SP1 各命令整理.
+  - 初始化 (每當斷線重連, 進行一次即可):
+    - 印表機恢復初始設定: 無底線、取消反白、單倍寬、單倍高、16x24 字型、ASCII
+      編碼模式、字元靠左對齊、一維條碼位置重置、一維條碼高 140 點
+      send: 1B 40
+      recv: (none)
+      (快)
+    - Reset: 使機器回到 idle 狀態 (不會更改設定)
+      send: 1B 72 01
+      recv: (none)  
+      之後應下達 'ESC #'
+    - 切換成使用 ESC/POS protocol
+      send: 1B 23  (ESC #)
+      recv: 1B 23  (ESC #)  <-- 如果成功的話.
+  - 狀態:
+    - 獲得印表機資訊:  (失敗, 而且干擾列印)
+      send: 1B 28 54
+      recv: firmware_version CHAR(20),
+            checksum BYTE(2), 先 low, 然後 high byte
+            pull_prev BYTE(1) 0=無防拉, 1=防拉
+    - 印表機是否支援半裁:  (失敗, 而且干擾列印)
+      send: 1B 28 59
+      recv: 0=有支援, 1=無支援.
+    - 讀取印表機狀態:   (成功)
+      印表機在 idle 狀態下才有效.
+      send: 1D 61
+      recv: two bytes data
+        bit0=1 cover open or no paper on thermal head
+        bit1=1 roller paper empty
+        bit2=1 cutter malfunction
+        bit3=1 anti-pulling sensor masked  (只適用於有防拉機型)
+        bit4=1 check-sum error
+        bit5=1 no SD card ready
+        bit6=1 abnormal temperature
+        bit7=1 SD file error
+        --- hight byte below
+        bit8=1 roller paper low level warning
+        bit9=1 out paper sensor mask  (for model NNX only)
+        bit10=1 paper jam
+        (all others reserved)
+      此狀態讀取很慢, 與前後指定最好間隔 1 sec. 且如果下達時機器正在列印或非 idle, 有可能完全不回應.
+  - 設定:
+    - 設定 1D barcode 細線與粗線寬度
+      send: 1B 77 m n
+      recv: (none)
+      m=1~10 (細線寬度, default 2)
+      n=2~5  (粗線/細線寬度比, default 2)
+    - 設定一維條碼對照文字顯示位置
+      send: 1D 48 n
+      n=0(none), 1(above), 2(below), 3(both)
+    - 內定輸出 ASCII 字型. 可切換至 utf32 (4-byte, big-endian)
+      send: 1C 28
+      recv: (none)
+      範例:
+      --------------------------------------------------------------------
+      #-*- coding:UTF-8 -*-
+      ...
+      ser.write(b'\x1c\x28')
+      a = '列印文字'.encode('utf-32')    # a 將為 binary 字串.
+      ser.write(a)   將 utf32 字串輸出至印表機.
+      --------------------------------------------------------------------
+  - 列印:
+    - FormFeed: 告知一頁結束, 並進行全裁切.
+      send: 0C
+      recv: (none)
+    - Carriage Return: 告知一頁結束, 並進行半裁切. (只適用於無防拉機型)
+      send: 0D
+      recv: (none)
+
+- AstroKernel hook keyboard
+  - Keylogger
+  (todo)
+
+- 彈出式懸浮訊息:
+  透過 yad utility 來達成.
+  $ sudo apt install yad
+  參考資料:
+    https://smokey01.com/help/yad-tips-0.0.2.html
+    https://yad-guide.ingk.se/examples/examples.html
+  例如: 顯示一 popup 訊息, 五秒後自動消失.
+  $ yad --on-top --no-buttons --undecorated --borders=50 --text-align=center --timeout=5 --text="Hello World!" &
+
+- 懸浮鍵盤
+  - florance
+    https://manpages.ubuntu.com/manpages/focal/man1/florence.1.html
+    sudo apt install florence
+    $ florence --use-config=FILE --focus[=WINDOW]  
+      - 可以指定 configure file. (故格式可以特定)
+      - 可以只將按鍵丟給指定視窗. 所以不會將 key 丟到不想去的地方.
+    florance must be run under X11, so must choose X11 instead of Wayland
+  - onboard
+    https://askubuntu.com/questions/1426352/how-to-get-on-screen-keyboard-osk-to-work-like-a-mobile-device
+    安裝: sudo apt install onboard
+    目前安裝過程會出現 error, 但依然可安裝與執行.
+    另外, 覺得執行結果比不上 Florance 友善, 會搶 cursor.
+  - GOK (Gnome 的屏幕键盘)，kvkbd，onboard
+  
+- 設定檔案
+  進階 ini 格式: 支援單一變數多行 value; 支援代入${name}; '#' 或 ';' 為註解.
+  使用範例: https://docs.python.org/3/library/configparser.html
+  -- 範例: example.ini ----------------------------------------
+  [DEFAULT]
+  ServerAliveInterval = 45
+  Compression = yes
+  CompressionLevel = 9
+  ForwardX11 = yes
+
+  [forge.example]
+  User = hg
+  # comment: no more data after User under [forge.example]
+
+  [topsecret.server.example]
+  Port = 50022
+  ForwardX11 = no
+
+- 透過 key 來加密字串, 並只能用同一 key 才能解密
+  https://stackoverflow.com/questions/27335726/how-do-i-encrypt-and-decrypt-a-string-in-python
+  安裝: pip install cryptocode
+  使用: 
+  import cryptocode
+  encoded = cryptocode.encrypt("mystring","mypassword")
+  # And then to decode it:
+  ecoded = cryptocode.decrypt(encoded, "mypassword")
+
+- For many reason. 關掉 Wayland, 使用 X 11
+  方式尚未確定.
+  - https://askubuntu.com/questions/1410256/how-do-i-use-the-x-window-manager-instead-of-wayland-on-ubuntu-22-04
+    https://discourse.ubuntu.com/t/how-to-switch-from-x11-to-wayland-on-live-ubuntu-24-04-1/52917
+  - $ sudo vi /etc/gdm3/custom.conf
+    ------------------------------------------
+    WaylandEnable = false      <-- active this line
+    ------------------------------------------
+    $ sudo systemctl restart gdm3
+  - Check your session type with echo "$XDG_SESSION_TYPE"
+    $ echo $XDG_SESSION_TYPE
+    X11
+    -------
+    On the desktop: Ubuntu Settings --> System --> About --> Windowing System should:'X11'
+
+- Ubuntu 下, Firefox 的 configuration files (setting, bookmark, ...)
+  參考: https://askubuntu.com/questions/1414757/where-does-firefox-snap-store-the-profiles
+  location: ~/snap/firefox/common/.mozilla/firefox/kb9384jq.default/
+
+- 列印  
+  - 插入 ICT SP1 printer USB, 會顯示如下裝置 /dev/ttyACM0:
+    echo -e -n '\x1B\xF0' > /dev/ttyACM0
+
+- 開機後啟動 Python virtual environment 並執行 ~/.profile 內命令.
+
+
+<End of Document>
