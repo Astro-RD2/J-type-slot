@@ -28,6 +28,8 @@ Version 1.2rc1
   - for 出金:
     {base_url}/api/v1/deposit/type/req-cashout/
     {base_url}/api/v1/deposit/type/end-cashout/
+  - for 自動登入:
+    https://demo.n1s168.com/#/{token}
 
 - 聯繫資料:
    Telegram 群組: "泰偉*永宙 實體機台聯合開發案"
