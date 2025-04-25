@@ -75,16 +75,29 @@ VMware Image 版本控制
   第一次登入選 guest
     右下出現齒輪, 選擇 Ubuntu on Xorg, 使切換到使用 X11 而非內定的 Wayland
 
-(2) 使開機後能自動以 root 帳號登入 GNOME/GDM
+(2) 使用 GDM3 登入, xfce4 桌面
+  https://linuxcapable.com/how-to-install-xfce-on-ubuntu-linux/
+  $ apt install xfce4 xfce4-googies
+  $ reboot
+  Select 'fce' on login UI
+  
+  $ xfce4-power-manager
+  When power bottom is pressed -> Shutdown
+  System power saving => When inactive for -> Never
+  Display power management => ( disabled)
+  Blank after => Never
+  Automatically lock the session -> Never
+
+(3) 使開機後能自動以 root 帳號登入 GNOME/GDM
   - 參考 https://hackmd.io/@Cyui/B1YnFwT8R
     root 密碼: !qaz2wsx 
     設定完成重開機
 
-(3) 更新/修補系統並安裝 sshd
+(4) 更新/修補系統並安裝 sshd
   $ apt update
   $ apt upgrade
 
-(4) 移除 snap firefox, 改安裝 DEB firefox
+(5) 移除 snap firefox, 改安裝 DEB firefox
   參考步驟: https://www.omgubuntu.co.uk/2022/04/how-to-install-firefox-deb-apt-ubuntu-22-04
   步驟有點複雜, 但還算明確.
   如果不進行此, 會發生對 keyboard input 失效的情況. 原因是 snap 內的 firefox 與部分套件的整合不一致.
@@ -92,10 +105,10 @@ VMware Image 版本控制
   # 確認可以自命令列執行瀏覽器 (browser).
   $ firefox -kiosk -private-window "https://www.google.com"   可以成功全畫面、隱私分頁. (按下 Alt-F4 關閉應用程式)
 
-(5) 安裝 sshd
+(6) 安裝 sshd
   $ apt install ssh
 
-(6) (不要進行此)調整 /etc/ssh/sshd_config, 使能透過 ssh client 來遠端執行 X app
+(7) (不要進行此)調整 /etc/ssh/sshd_config, 使能透過 ssh client 來遠端執行 X app
   $ vi /etc/ssh/sshd_config
   -----------------------------------
   ...
@@ -104,7 +117,7 @@ VMware Image 版本控制
   -----------------------------------
   上述測試結果失敗.
 
-(7) 得知 IP 位址
+(8) 得知 IP 位址
   - 測試可自 Host OS 發出 ssh client 連線至此 Virtual machine.
     $ ip a
     ...
@@ -112,12 +125,12 @@ VMware Image 版本控制
     ...
   - 建議可使用 Share folder, 方便共享開發目錄.
 
-(8) 使 Python 易用
+(9) 使 Python 易用
   $ apt install python3-pip
   $ apt install python-is-python3    <-- 不要此. 因為 virtual environment 會自動產生 'python' 至對應 python 版本
   $ apt install python3-venv
 
-(9) 建立 Python 虛擬環境 base
+建立 Python 虛擬環境 base
   $ mkdir /root/py-venv/
   $ python -m venv /root/py-venv/base
   $ source /root/py-venv/base/bin/activate   <-- 啟動虛擬環境. (可放在開機批次檔)
@@ -270,7 +283,7 @@ VMware Image 版本控制
     SPIN      [Ctrl-ALT-Enter]    於遊戲中轉換成[SPACE]送出   啟動一局遊戲
     CASHOUT   [Ctrl-ALT-P]                                 進行 Payout
     HOME      [Ctrl-Alt-HOME]     引導目前網頁至首頁.         用來回到遊戲首頁.
-    VOLUME+   [Ctrl-ALT-'+']      amixer set Master 10%+   提升音量
+    VOLUME+   [Ctrl-ALT-'=']      amixer set Master 10%+   提升音量
     VOLUME-   [Ctrl-ALT-'-']      amixer set Master 10%-   降低音量
     REFRESH   [Ctrl-ALT-R]        滑鼠點選 Refresh 圖案      觸發網頁中央獲取最新 credits 數值的動作
     -- KEY -------------------------------
@@ -302,13 +315,31 @@ VMware Image 版本控制
   print(response.json())  # 取得回應 body
 
 - 按鍵系統攔截與模擬:
-  考慮使用 XLib 或使用 pynput. 目前使用 keyboard, 會有很多問題.
-  (base) $ pip install pynput
-  (todo)
+  - 使用 pynput. 目前使用 keyboard, 會有很多問題.
+    official: https://pynput.readthedocs.io/en/latest/index.html
+  - 安裝與引用
+    $ pip install pynput
+    from pynput import keyboard
+    from pynput.keyboard import Key, Listener, Controller
+  - 變更 BackEnd
+    事先設定環境變數.
+    $ export PYNPUT_BACKEND=win32|uinput|xorg
 
 - 瀏覽器控制與監視
-  原則上將使用
-  (todo)
+  - 將使用 selenium
+    official: https://selenium-python.readthedocs.io/
+  - 安裝與引用
+    $ pip install selenium
+    ---------------------------
+    # for browser/window control
+    from selenium import webdriver
+    from selenium.webdriver.firefox.service import Service
+    from selenium.webdriver.firefox.options import Options
+
+    # for browser/window states monitoring
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    ---------------------------
 
 - 彈出式懸浮訊息:
   透過 yad utility 來達成.

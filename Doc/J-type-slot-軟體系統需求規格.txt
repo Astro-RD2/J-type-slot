@@ -92,7 +92,7 @@ Version 1.2rc2
     SPIN      [Ctrl-ALT-Enter]    於遊戲中轉換成[SPACE]送出   啟動一局遊戲
     CASHOUT   [Ctrl-ALT-P]                                 進行 Payout
     HOME      [Ctrl-Alt-HOME]     引導目前網頁至首頁.         用來回到遊戲首頁.
-    VOLUME+   [Ctrl-ALT-'+']      amixer set Master 10%+   提升音量
+    VOLUME+   [Ctrl-ALT-'=']      amixer set Master 10%+   提升音量 (shift-'=' 即 '+')
     VOLUME-   [Ctrl-ALT-'-']      amixer set Master 10%-   降低音量
     REFRESH   [Ctrl-ALT-R]        滑鼠點選 Refresh 圖案      觸發網頁中央獲取最新 credits 數值的動作
     -- KEY -------------------------------
