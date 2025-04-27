@@ -79,14 +79,18 @@ VMware Image 版本控制
   https://linuxcapable.com/how-to-install-xfce-on-ubuntu-linux/
   $ apt install xfce4 xfce4-googies
   $ reboot
-  Select 'fce' on login UI
+  Select 'xfce' on login UI
   
   $ xfce4-power-manager
   When power bottom is pressed -> Shutdown
   System power saving => When inactive for -> Never
-  Display power management => ( disabled)
+  Display power management => (disabled)
   Blank after => Never
   Automatically lock the session -> Never
+  
+  將 WorkSpaces 縮減到 1 個 (內定 4 個 )
+  Setting->Workspaces
+  
 
 (3) 使開機後能自動以 root 帳號登入 GNOME/GDM
   - 參考 https://hackmd.io/@Cyui/B1YnFwT8R
@@ -291,6 +295,9 @@ VMware Image 版本控制
   - 補充說明:
     當按下 [Refresh], 如果目前位於遊戲瀏覽器/遊戲, 送出空白(' ') 至遊戲瀏覽器.
 
+- 讀取設定檔案
+  設定檔案之位置、內容, 使用方式, 請參考文件 "J-type-slot-軟體系統需求規格.txt" 內, 第 2, 3 章節.
+
 - 登入遊戲 API server, 取得 token 之程式範例
   import requests
   from requests_toolbelt.utils import dump      # for debug
@@ -315,8 +322,10 @@ VMware Image 版本控制
   print(response.json())  # 取得回應 body
 
 - 按鍵系統攔截與模擬:
-  - 使用 pynput. 目前使用 keyboard, 會有很多問題.
+  - 請參考範例程式: J-type-slot/Other/Tech-sample-codes/test_tab2.py
+  - 將使用 pynput. (如果使用 keyboard, 會有很多問題)
     official: https://pynput.readthedocs.io/en/latest/index.html
+  - 請些換 Desktop environment (DE) 至使用 X11 protocol
   - 安裝與引用
     $ pip install pynput
     from pynput import keyboard
@@ -326,6 +335,7 @@ VMware Image 版本控制
     $ export PYNPUT_BACKEND=win32|uinput|xorg
 
 - 瀏覽器控制與監視
+  - 請參考範例程式: J-type-slot/Other/Tech-sample-codes/test_tab2.py
   - 將使用 selenium
     official: https://selenium-python.readthedocs.io/
   - 安裝與引用
@@ -340,16 +350,26 @@ VMware Image 版本控制
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
     ---------------------------
+  - 教學: https://steam.oxxostudio.tw/category/python/spider/selenium.html#a3
+  - 放大縮小: document.body.style.MozTransform = 'scale(1.5)'   // zoom in by 1.5 time  <-- 這個僅供參考, 勿用.
 
 - 彈出式懸浮訊息:
-  透過 yad utility 來達成.
-  $ sudo apt install yad
-  參考資料:
-    https://smokey01.com/help/yad-tips-0.0.2.html
-    https://yad-guide.ingk.se/examples/examples.html
-  例如: 顯示一 popup 訊息, 五秒後自動消失.
-  $ yad --on-top --no-buttons --undecorated --borders=50 --text-align=center --timeout=5 --text="Hello World!" &
-
+  - 透過 notify-send 來達成.
+    參考: https://opensource.com/article/22/1/linux-desktop-notifications
+    參考: https://github.com/fredrikhl/cheatsheets/blob/master/notify-send.md
+    參考: https://unix.stackexchange.com/questions/251243/what-do-a-notify-send-notification-category-hint-and-version-parameters-mean
+    $ notify-send [-u <urgent>] [-t <timeout>] [-i <icon>] [-c <category>] <title> [<message>]
+      urgent: low|normal|critical  : the importance level of the message
+      timeout: the visible duration (millisecond)
+      message: could be described with HTML, e.g <b>bold text</b>, <i>italy text</i>, <u>underscore text</u>, <a>url</a>, <img>url</img>, <font></font>
+      icon: notify-send uses icons from the /usr/share/icons/**/32x32/** 
+            Full list reference: https://specifications.freedesktop.org/icon-naming-spec/latest/#names
+        eg. 'dialog-error', 'dialog-warning', 'face-angry', 'audio-volume-medium', 'notification-message-im', 'network-error', 'network-offline', or specific image path/file
+      category: (unknown)
+  - Python 範例: 以下命令發出, 都是 non-blocking 行為. 訊息出現三秒後即自動消失.
+    >>> os.system('notify-send -t 3000 -i face-smile 'Hello World' 'Today is a great coding day')
+    >>> os.system('notify-send -u critical -t 3000 -i network-offline 'Network' 'Network disconnected, retrying')
+    
 - 透過 ICT SP1-BDx 印表機列印收據
   - 印表機本身為 USB 介面. 於作業系統內會顯化 /dev/ttyACM0 這個軟體介面. 將其當作 serial port 來操作即可.
     注意! 如果未連接, 則 /dev/ttyACM0 檔案不存在.
@@ -944,13 +964,22 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
   (todo)
 
 - 彈出式懸浮訊息:
-  透過 yad utility 來達成.
-  $ sudo apt install yad
-  參考資料:
-    https://smokey01.com/help/yad-tips-0.0.2.html
-    https://yad-guide.ingk.se/examples/examples.html
-  例如: 顯示一 popup 訊息, 五秒後自動消失.
-  $ yad --on-top --no-buttons --undecorated --borders=50 --text-align=center --timeout=5 --text="Hello World!" &
+  - 最終決定使用 notify-send 來達成.
+    
+  - 透過 yad utility 來達成.
+    $ sudo apt install yad
+    - 參考資料:
+      https://smokey01.com/help/yad-tips-0.0.2.html
+      https://yad-guide.ingk.se/examples/examples.html
+      https://yad-guide.ingk.se/general-options/general-options.html
+    - 例如: 顯示一 popup 訊息, 五秒後自動消失.
+      $ yad --on-top --no-buttons --splash --undecorated --text-align=center --timeout=5 --no-focus --text="Hello World!" &
+      其他參數:
+      --borders
+    - Python 範例
+      >>> os.system('yad --on-top --no-buttons --splash --undecorated --text-align=center --timeout=10 --text="Hello World!" >/dev/null 2>&1 &')
+  - 透過 Zenity
+    - Python 範例 使用 Zenity
 
 - 懸浮鍵盤
   - florance

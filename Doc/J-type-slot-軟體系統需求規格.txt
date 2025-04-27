@@ -145,7 +145,7 @@ Version 1.2rc2
   - Operator menu 將使用 Web App (Python + Flask) 方式開發.
   - 設定檔案位置 (Runtime/Embedded): 
     /root/astro/data/setting.ini 
-    /var/astro/data/setting.ini-default  <-- 不更動此, 供回復出廠值.
+    /var/astro/data/setting.ini-default  <-- 不更動此, 供回復出廠值用.
 
 - Python 存取設定檔案方式:
   - 參考: https://docs.python.org/3/library/configparser.html
