@@ -89,7 +89,7 @@ VMware Image 版本控制
   Automatically lock the session -> Never
   
   將 WorkSpaces 縮減到 1 個 (內定 4 個 )
-  Setting->Workspaces
+  Applications => Settings => Workspaces
   
 
 (3) 使開機後能自動以 root 帳號登入 GNOME/GDM
@@ -268,7 +268,8 @@ VMware Image 版本控制
   (todo)
 
 - Screen 設定 (Portrait, 原本螢幕順時針轉 90 度)
-  - Ubuntu settings => Display => Portrait Right
+  - For Gnome: Ubuntu settings => Display => Portrait Right
+    For xfce4: Applications => Settings => Display => General => Rotate => Left
   - (optional) 讓登入畫面也
     參考: https://askubuntu.com/questions/1003964/how-to-rotate-login-screen-in-gdm3  
     $ cp /root/.config/monitors.xml /var/lib/gdm3/.config/
@@ -298,6 +299,8 @@ VMware Image 版本控制
 - 讀取設定檔案
   設定檔案之位置、內容, 使用方式, 請參考文件 "J-type-slot-軟體系統需求規格.txt" 內, 第 2, 3 章節.
 
+- 開機後自動啟動程式放置於 ~/.profile.
+
 - 登入遊戲 API server, 取得 token 之程式範例
   import requests
   from requests_toolbelt.utils import dump      # for debug
@@ -320,6 +323,7 @@ VMware Image 版本控制
   
   print(response.status_code)  # 取得回應 code, 如果為 '200' 表示成功
   print(response.json())  # 取得回應 body
+
 
 - 按鍵系統攔截與模擬:
   - 請參考範例程式: J-type-slot/Other/Tech-sample-codes/test_tab2.py
@@ -369,6 +373,23 @@ VMware Image 版本控制
   - Python 範例: 以下命令發出, 都是 non-blocking 行為. 訊息出現三秒後即自動消失.
     >>> os.system('notify-send -t 3000 -i face-smile 'Hello World' 'Today is a great coding day')
     >>> os.system('notify-send -u critical -t 3000 -i network-offline 'Network' 'Network disconnected, retrying')
+
+- 調節音量
+  - 如何使用命令列程式調節音量: (need to try)
+    https://unix.stackexchange.com/questions/21089/how-to-use-command-line-to-change-volume
+  - command examples:
+    $ amixer set Master 50%
+    $ amixer -D pulse set Master 50%
+    $ amixer set Master 10%+    音量增加 10%
+    $ amixer set Master 10%-    音量減少 10%
+    $ amixer set Master mute    靜音
+    $ amixer set Master unmute  取消靜音
+    $ amixer set Master toggle  
+  - Python 範例:
+    增加/減少音量:
+    os.system('amixer set Master 5%+')
+    os.system('amixer set Master 5%-')
+    當持續按時, 應持續增加/減少音量 (可能要用 thread 配合 signal/mutex 來做到)
     
 - 透過 ICT SP1-BDx 印表機列印收據
   - 印表機本身為 USB 介面. 於作業系統內會顯化 /dev/ttyACM0 這個軟體介面. 將其當作 serial port 來操作即可.
@@ -400,12 +421,12 @@ VMware Image 版本控制
     # set 1D-barcode text position
     ser.write(b'\x1d\x48\x02')
 
-    # get whether supporting half cut (無返回, 失敗, 且造成列印失敗)
+    # get whether supporting half cut (無返回, 失敗, 且造成之後列印雜訊)
     ser.write(b'\x1b\x28\x59')
     a = ser.read(64)
     print('support half cut:', a, len(a))
     
-    # read printer information  (無返回, 失敗)
+    # read printer information  (無返回, 失敗, 且造成之後列印雜訊)
     ser.write(b'\x1b\x28\x54')
     a = ser.read(64)
     print('info:', a)
@@ -1046,7 +1067,108 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
   - 插入 ICT SP1 printer USB, 會顯示如下裝置 /dev/ttyACM0:
     echo -e -n '\x1B\xF0' > /dev/ttyACM0
 
-- 開機後啟動 Python virtual environment 並執行 ~/.profile 內命令.
+- 網路設定:
+  - UI: /usr/bin/nm-connection-editor
+  - $ cd /etc/netplan
+    可看到如下三個檔案:
+    $ cat 90-NM-14c76322-72a5-3c56-a970-1ff63ef8306d.yaml
+    network:
+      version: 2
+      ethernets:
+        NM-14c76322-72a5-3c56-a970-1ff63ef8306d:
+          renderer: NetworkManager
+          match:
+            name: "enp2s0"
+          addresses:
+          - "172.16.3.247/22"
+          nameservers:
+            addresses:
+            - 172.16.3.71
+          ipv6-address-generation: "stable-privacy"
+          wakeonlan: true
+          networkmanager:
+            uuid: "14c76322-72a5-3c56-a970-1ff63ef8306d"
+            name: "Wired connection 1"
+            passthrough:
+              connection.autoconnect-priority: "-999"
+              connection.timestamp: "1744824379"
+              ethernet._: ""
+              ipv4.address1: "172.16.3.247/22,172.16.3.250"
+              ipv4.ignore-auto-dns: "true"
+              ipv4.method: "manual"
+              ipv6.method: "disabled"
+              ipv6.ip6-privacy: "-1"
+              proxy._: ""
 
+    $ cat 90-NM-27a8b3aa-47a8-3a60-bb3d-ee8f9c768e68.yaml
+    network:
+      version: 2
+      ethernets:
+        NM-27a8b3aa-47a8-3a60-bb3d-ee8f9c768e68:
+          renderer: NetworkManager
+          match:
+            name: "enp3s0"
+          dhcp4: true
+          ipv6-address-generation: "stable-privacy"
+          wakeonlan: true
+          networkmanager:
+            uuid: "27a8b3aa-47a8-3a60-bb3d-ee8f9c768e68"
+            name: "Wired connection 2"
+            passthrough:
+              connection.autoconnect-priority: "-999"
+              ethernet._: ""
+              ipv6.method: "disabled"
+              ipv6.ip6-privacy: "-1"
+              proxy._: ""
+
+    $ cat 90-NM-7567e2e4-c675-4d5f-b4cf-7ac3e58a911e.yaml
+    network:
+      version: 2
+      wifis:
+        NM-7567e2e4-c675-4d5f-b4cf-7ac3e58a911e:
+          renderer: NetworkManager
+          match:
+            name: "wlp4s0"
+          dhcp4: true
+          dhcp6: true
+          ipv6-address-generation: "stable-privacy"
+          access-points:
+            "astrocorp_10F_5G":
+              auth:
+                key-management: "psk"
+                password: "Astro1688#"
+              networkmanager:
+                uuid: "7567e2e4-c675-4d5f-b4cf-7ac3e58a911e"
+                name: "astrocorp_10F_5G"
+                passthrough:
+                  connection.timestamp: "1744954985"
+                  wifi-security.auth-alg: "open"
+                  ipv6.ip6-privacy: "-1"
+                  proxy._: ""
+          networkmanager:
+            uuid: "7567e2e4-c675-4d5f-b4cf-7ac3e58a911e"
+            name: "astrocorp_10F_5G"
+
+    目前網路狀況:
+    # ip a
+    1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+        link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+        inet 127.0.0.1/8 scope host lo
+           valid_lft forever preferred_lft forever
+        inet6 ::1/128 scope host noprefixroute
+           valid_lft forever preferred_lft forever
+    2: enp2s0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc fq_codel state DOWN group default qlen 1000
+        link/ether 8c:c5:8c:0d:4b:b2 brd ff:ff:ff:ff:ff:ff
+    3: enp3s0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc fq_codel state DOWN group default qlen 1000
+        link/ether 8c:c5:8c:0d:4b:b3 brd ff:ff:ff:ff:ff:ff
+    4: wlp4s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+        link/ether 00:26:c6:86:1e:61 brd ff:ff:ff:ff:ff:ff
+        inet 192.168.1.145/24 brd 192.168.1.255 scope global dynamic noprefixroute wlp4s0
+           valid_lft 85405sec preferred_lft 85405sec
+        inet6 fe80::8c2:569f:6f6e:4b9f/64 scope link noprefixroute
+           valid_lft forever preferred_lft forever
+
+  - 只顯示某 interface
+    $ ip l sh enp3s0
 
 <End of Document>
