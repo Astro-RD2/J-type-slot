@@ -88,15 +88,15 @@
 <body>
     <div class="header">
         <div class="row-conten">
-            <div class="item" id="kernel_ver">Kernel_ver: </div>
-            <div class="item" id="IPADDR">IP: </div>
-            <div class="item" id="CURRENT_DT">Current date/time: </div>
-            <div class="item2" id="HOME_URL">HOME URL: </div>      
-            <div class="item" id="TITLE">Title: </div>
-            <div class="item" id="ASSET">Asset: </div>
-            <div class="item" id="ACCOUNT">Account: </div>            
-            <div class="item2" id="TOKEN">Token state: </div>
-            <div class="item2" id="REMARK">Note: </div>
+            <div class="item" id="KERNEL_VER_h">Kernel_ver: </div>
+            <div class="item" id="IPADDR_h">IP: </div>
+            <div class="item" id="CURRENT_DT_h">Current date/time: </div>
+            <div class="item2" id="HOME_URL_h">HOME URL: </div>      
+            <div class="item" id="TITLE_h">Title: </div>
+            <div class="item" id="ASSET_h">Asset: </div>
+            <div class="item" id="ACCOUNT_h">Account: </div>            
+            <div class="item2" id="TOKEN_h">Token state: </div>
+            <div class="item2" id="REMARK_h">Note: </div>
         </div>
     </div>
 
@@ -115,104 +115,93 @@
             <section id="display">
                 <div id="contentSwitch">
                     <!-- Forms -->
-                    <div id="form1" class="form-container">
-                        <h2>Network setting</h2>
-                        <form>                        
-                        <input type="checkbox" id="BOOTPROT" name="BOOTPROT">
-                        <label for="BOOTPROT">Dynamic/DHCP</label><br><br>
-                        <input type="checkbox" id="static" name="static">
-                        <label for="static">Static</label><br>
-                            <div id="inputContainer" class="hidden">
-                                <label for="IPADDR">IP address:</label>
-                                <input type="text" id="IPADDR" name="IPADDR" placeholder="Enter IP here">
-                                <label for="NETMASK">Netmask:</label>
-                                <input type="text" id="NETMASK" name="NETMASK" placeholder="Enter Netmask here"><br>
-                                <label for="GATEWAY">Gateway:</label>
-                                <input type="text" id="GATEWAY" name="GATEWAY" placeholder="Enter Gateway here"><br><br>
+                    <div>
+                        <form class="form-container" id="form1" method="POST" action="/data/network">
+                        <h2>Network setting</h2>                        
+                        <!-- <input type="radio" id="dhcp" name="BOOTPROT" onclick="showField(1)">
+                        <label for="dhcp" value="Dynamic/DHCP">Dynamic/DHCP</label><br><br>
+                        <input type="radio" id="static" name="BOOTPROT" onclick="showField(2)">
+                        <label for="static" value="static">Static</label><br> -->
+                        <label><input type="radio" name="BOOTPROT" id="dhcp" value="dhcp" onclick="showField(1)"> Dynamic/DHCP</label><br>
+                        <label><input type="radio" name="BOOTPROT" id="static" value="static" onclick="showField(2)"> static</label><br>
+                            <div id="staticfield" class="hidden" style="display:none;">
+                                <label for="IPADDR_f1" >IP address:</label>
+                                <input type="text" id="IPADDR_f1" name="IPADDR_f1" placeholder="Enter IP here" >
+                                <label for="NETMASK_f1">Netmask:</label>
+                                <input type="text" id="NETMASK_f1" name="NETMASK_f1" placeholder="Enter Netmask here"><br>
+                                <label for="GATEWAY_f1">Gateway:</label>
+                                <input type="text" id="GATEWAY_f1" name="GATEWAY_f1" placeholder="Enter Gateway here"><br><br>
                             </div>
-                        <input type="submit" value="Submit Network setting">
+                        <input type="submit" value="Apply Network setting">
                         </form>
                     </div>
                     
-                    <div id="form2" class="form-container">
-                        <h2>Basic data setting</h2>
-                        <form>
-                        <p>The title or shop name which will be printed on receipt.</p>
-                        <label for="TITLE">Title/Shop name: </label>
-                        <input type="text" id="TITLE" name="TITLE" placeholder="Enter title/shop name here"><br>
-                        <p>The custom remark/reminder showed on the display when entering operator menu.</p>
-                        <label for="REMARK">Remark: </label>
-                        <input type="text" id="REMARK" name="REMARK" placeholder="Enter remark here"><br><br>
-                        <label for="TIME_ZONE">Time Zone: </label>
-                        <select name="TIME_ZONE" id="TIME_ZONE">
-                            <!-- TIME_ZONE_LIST -->
-                            <option value=0>UTC</option>
-                            <option value=1>UTC+6</option>
-                            <option value=2>UTC+5</option>
-                            <option value=3>UTC+7</option>
-                            <option value=4>UTC+8</option>
-                        </select><br>
-                        <label for="TIME_FORMAT">Time format: </label>
-                        <select name="TIME_FORMAT" id="TIME_FORMAT">
-                            <!-- TIME_FORMAT_LIST -->
-                            <option value=0>d/M/YYYY (4/23/2025)</option>
-                            <option value=1>M/d/YYYY (4/23/2025)</option>
-                            <option value=2>MMM d, YYYY (Apr 23, 2025)</option>              
-                        </select><br><br>
-                        <label for="CURRENCY_SYMBOL">Currency symbol: </label>
-                        <select name="CURRENCY_SYMBOL" id="CURRENCY_SYMBOL">
-                            <!-- CURRENCY_SYMBOL_LIST -->
-                            <option value=0>$$</option>
-                            <option value=1>£</option>
-                            <option value=2>¥</option>
-                            <option value=3>€</option>
-                            <option value=4>₣</option>
-                        </select>
-                        <label for="CURRENCY_SYMBOL_PRINT_SIDE">, printed on the </label>
-                        <label><input type="radio" name="CURRENCY_SYMBOL_PRINT_SIDE" value="right">right</label>                          
-                        <label><input type="radio" name="CURRENCY_SYMBOL_PRINT_SIDE" value="left" checked="checked">left</label>
-                        <label for="CURRENCY_SYMBOL"> side of the money</label><br>
-                        <label for="THOUSAND_SEPARATOR">Thousand separator: </label>
-                        <select name="THOUSAND_SEPARATOR" id="THOUSAND_SEPARATOR">
-                            <!-- THOUSAND_SEPARATOR_LIST -->
-                            <option value=0>,</option>
-                            <option value=1>.</option>
-                            <option value=2>None</option>                               
-                        </select><br><br>
-                        <p>The URL of home page of game portal.</p>
-                        <label for="HOME_URL">Home URL: </label>
-                        <select name="HOME_URL" id="HOME_URL">
-                            <!-- HOME_URL_LIST -->
-                            <option value="HOME_URL1">https://demo.n1s168.com/#/</option>
-                            <option value="HOME_URL2">https://www.n1s168.com/#/</option>
-                        </select><br>
-                        <label for="apientry">API Entry: </label>
-                        <input type="text" id="apientry" name="apientry" placeholder="Enter API entry here"><br><br>
-                        <p>The unique ID for this slot machine (optional)</p>
-                        <label for="ASSET">Asset: </label>
-                        <input type="text" id="ASSET" name="ASSET" placeholder="Enter Asset here"><br><br>
-                        <input type="submit" value="Submit Basic Data setting">
+                    <div>
+                        <form  class="form-container" id="form2"  method="POST" action="/data/basicdata">
+                            <h2>Basic data setting</h2>
+                            <p>The title or shop name which will be printed on receipt.</p>
+                            <label for="TITLE_f2">Title/Shop name: </label>
+                            <input type="text" id="TITLE_f2" name="TITLE_f2" placeholder="Enter title/shop name here"><br>
+                            <p>The custom remark/reminder showed on the display when entering operator menu.</p>
+                            <label for="REMARK_f2">Remark: </label>
+                            <input type="text" id="REMARK_f2" name="REMARK_f2" placeholder="Enter remark here"><br><br>
+                            <label for="TIME_ZONE">Time Zone: </label>
+                            <select name="TIME_ZONE" id="TIME_ZONE">
+                                <!-- TIME_ZONE_LIST -->
+                            </select><br>
+                            <label for="TIME_FORMAT">Time format: </label>
+                            <select name="TIME_FORMAT" id="TIME_FORMAT">
+                                <!-- TIME_FORMAT_LIST -->
+                            </select><br><br>
+                            <label for="CURRENCY_SYMBOL">Currency symbol: </label>
+                            <select name="CURRENCY_SYMBOL" id="CURRENCY_SYMBOL">
+                                <!-- CURRENCY_SYMBOL_LIST -->
+                            </select>
+                            <label for="CURRENCY_SYMBOL_PRINT_SIDE">, printed on the </label>
+                            <label><input type="radio" name="CURRENCY_SYMBOL_PRINT_SIDE" id="right" value="right">right</label>                          
+                            <label><input type="radio" name="CURRENCY_SYMBOL_PRINT_SIDE" id="left" value="left">left</label>
+                            <label for="CURRENCY_SYMBOL"> side of the money</label><br>
+                            <label for="THOUSAND_SEPARATOR">Thousand separator: </label>
+                            <label><input type="radio" name="THOUSAND_SEPARATOR" id="comma" value=","> , </label>                          
+                            <label><input type="radio" name="THOUSAND_SEPARATOR" id="dot" value="."> . </label>                         
+                            <label><input type="radio" name="THOUSAND_SEPARATOR" id="space" value=" "> None </label>
+                            <!-- <select name="THOUSAND_SEPARATOR" id="THOUSAND_SEPARATOR">
+                                <option value=0>,</option>
+                                <option value=1>.</option>
+                                <option value=2>None</option>                               
+                            </select><br><br> -->
+                            <p>The URL of home page of game portal.</p>
+                            <label for="HOME_URL">Home URL: </label>
+                            <select name="HOME_URL" id="HOME_URL">
+                                <!-- HOME_URL_LIST -->
+                            </select><br>
+                            <label for="apientry">API Entry: </label>
+                            <input type="text" id="apientry" name="apientry" placeholder="Enter API entry here"><br><br>
+                            <p>The unique ID for this slot machine (optional)</p>
+                            <label for="ASSET_f2">Asset: </label>
+                            <input type="text" id="ASSET_f2" name="ASSET_f2" placeholder="Enter Asset here"><br><br>
+                            <input type="submit" value="Apply Basic Data setting">
                         </form>
                     </div>
                     
-                    <div id="form3" class="form-container">
-                        <h2>Register</h2>
-                        <form>
-                        <label for="ACCOUNT">Account: </label>
-                        <input type="text" id="ACCOUNT" name="ACCOUNT"><br>                        
-                        <label for="pwd">Password: </label>
-                        <input type="password" id="pwd" name="pwd"><br>
-                        <button  onclick="token_action(0)">[ Get token ]</button> 
-                        <button  onclick="token_action(1)">[ Drop token ]</button><br><br>       
-                        <label for="TOKEN">Token: </label>
-                        <input type="text" id="TOKEN" name="TOKEN"><br><br>
-                        <button  onclick="test_login()">[ Login test ]</button>
+                    <div>                
+                        <form  class="form-container" id="form3">
+                            <h2>Register</h2>
+                            <label for="ACCOUNT_f3">Account: </label>
+                            <input type="text" id="ACCOUNT_f3" name="ACCOUNT_f3"><br>                        
+                            <label for="pwd">Password: </label>
+                            <input type="password" id="pwd" name="pwd"><br>
+                            <button  onclick="token_action(0)">[ Get token ]</button> 
+                            <button  onclick="token_action(1)">[ Drop token ]</button><br><br>       
+                            <label for="TOKEN_f3">Token: </label>
+                            <input type="text" id="TOKEN_f3" name="TOKEN_f3"><br><br>
+                            <button  onclick="test_login()">[ Login test ]</button>
                         </form>
                     </div>
 
-                    <div id="form4" class="form-container">
-                        <h2>Bill acceptor test</h2>
-                        <form>
+                    <div>
+                        <form class="form-container" id="form4">
+                            <h2>Bill acceptor test</h2>
                             <div class="item3" id="bamodel">Model name: </div>
                             <div class="item3" id="bafirmware">Firmware: </div>
                             <div class="item3" id="bacrc">CRC: </div>
@@ -226,35 +215,36 @@
                         </form>
                     </div>
                     
-                    <div id="form5" class="form-container">
-                        <h2>Receipt printer test</h2>
-                        <form>
+                    <div>
+                        <form class="form-container" id="form5" >
+                            <h2>Receipt printer test</h2>
                             <div class="item4" id="PRINTER_NAME">Model name: </div>
                             <div class="item4" id="rpdriver">Driver: </div>
                             <div class="item4" id="rpfirmware">Firmware: </div>
                             <div class="item4" id="rpcrc">CRC: </div>
                             <div id="rpstatus">Status: </div>
-
                             <button  onclick="test_receipt()">[ Print test receipt ]</button><br><br>
                         </form>
                     </div>
-                    <div id="form6" class="form-container">
-                        <h2>Reset</h2>
-                        <form>
-                        <label for="phone">Phone:</label>
-                        <input type="tel" id="phone" name="phone"><br><br>
-                        <input type="submit" value="Submit Form 6">
+
+                    <div>
+                        <form class="form-container" id="form6">
+                            <h2>Reset</h2>
+                            <label for="phone">Phone:</label>
+                            <input type="tel" id="phone" name="phone"><br><br>
+                            <input type="submit" value="Submit Form 6">
                         </form>
+                    </div>
                 </div>
             </section>
         </div>
     </div>
     <script>
         $(function() {
-            // const kernel_ver = document.getElementById('kernel_ver'); 
-            // BASIC           
-            const title = document.getElementById('TITLE');
-            const remark = document.getElementById('REMARK');
+            // BASIC    
+            const kernel_ver = document.getElementById('KERNEL_VER_h');       
+            const title = document.getElementById('TITLE_h');
+            const remark = document.getElementById('REMARK_h');
             const timezone_list = document.getElementById('TIME_ZONE_LIST'); 
             const timezone = document.getElementById('TIME_ZONE');
             const timeformat_list = document.getElementById('TIME_FORMAT_LIST'); 
@@ -262,28 +252,29 @@
             const currency_symbole_list = document.getElementById('CURRENCY_SYMBOL_LIST'); 
             const currency_symbole = document.getElementById('CURRENCY_SYMBOL');  
             const currency_symbole_print_side = document.getElementById('CURRENCY_SYMBOL_PRINT_SIDE');
-            const thousand_separator_list = document.getElementById('THOUSAND_SEPARATOR_LIST');
+            //const thousand_separator_list = document.getElementById('THOUSAND_SEPARATOR_LIST');
             const thousand_separator = document.getElementById('THOUSAND_SEPARATOR');            
-            const home_url = document.getElementById('HOME_URL');
+            const home_url = document.getElementById('HOME_URL_h');
             const home_url1 = document.getElementById('HOME_URL1');
             const home_url2 = document.getElementById('HOME_URL2');
-            const asset = document.getElementById('ASSET');
+            const asset = document.getElementById('ASSET_h');
 
             // NETWORK
             const bootprot = document.getElementById('BOOTPROT')
-            const ipaddr = document.getElementById('IPADDR'); 
+            const ipaddr = document.getElementById('IPADDR_h'); 
             const netmask = document.getElementById('NETMASK'); 
             const gateway = document.getElementById('GATEWAY'); 
 
             // REGISTER
-            const account = document.getElementById('ACCOUNT');
-            const token = document.getElementById('TOKEN');
+            const account = document.getElementById('ACCOUNT_h');
+            const token = document.getElementById('TOKEN_h');
             const token_last_ts = document.getElementById('TOKEN_LAST_TS');
 
-            // RECEIPT PRINTER
+            // DEVICE
+            // const  BILL_ACCEPTOR_PORT
             const printer_name = document.getElementById('PRINTER_NAME');
 
-            const current_dt = document.getElementById('current_dt'); 
+            const current_dt = document.getElementById('CURRENT_DT_h'); 
             const now = new Date();
             const options = { year: 'numeric', month: 'numeric', day: '2-digit' };
             const formattedDate = now.toLocaleDateString('fr-FR', options);
@@ -292,25 +283,185 @@
                 $.ajax({
                     url: '/data/message',
                     data: {},
+                    dataType: "json",
                     type: 'GET',
                     success: function(data) {                         
                         //kernel_ver.textContent =  "Kernel ver: " + data.appInfo.id;
+                        const new_data = JSON.parse(data);
+                        
+                        for (const [key, value] of Object.entries(new_data)) {                            
+                            // BASIC
+                            if (key == "TITLE") {
+                               var edtitle=value || '';
+                            } else if (key == "REMARK") {                                
+                               var edremark=value || '';
+                            } else if (key == "TIME_ZONE_LIST") {
+                                var edtime_zone_list=value || '';
+                            } else if (key=="TIME_ZONE") {
+                                var edtime_zone=value || '';
+                            } else if (key == "TIME_FORMAT_LIST") {                                
+                               var edtime_format_list=value || '';
+                            }else if (key == "TIME_FORMAT") {                                
+                               var edtime_format=value || '';
+                            } else if (key == "CURRENCY_SYMBOL_LIST") {
+                                var edcurrency_symbol_list=value || ''
+                            } else if (key=="CURRENCY_SYMBOL") {
+                                var edcurrency_symbol=value || '';
+                            } else if (key == "CURRENCY_SYMBOL_PRINT_SIDE") {                                
+                               var edcurrency_symbol_print_side=value  || '';
+                            } else if (key == "THOUSAND_SEPARATOR") {
+                                var edthousand_separator=value  || '';
+                            } else if (key=="HOME_URL") {
+                                var edhome_url=value  || '';
+                            } else if (key=="HOME_URL1") {
+                                var edhome_url1=value  || '';
+                            } else if (key=="HOME_URL2") {
+                                var edhome_url2=value  || '';
+                            } else if (key=="ASSET") {
+                                var edasset=value || '';
+                            } 
+                            // NETWORK
+                            else if (key=="BOOTPROT") {
+                                var edbootprot=value || '';
+                            } else if (key=="IPADDR") {
+                                var edipaddr=value || '';
+                            } else if (key=="NETMASK") {
+                                var ednetmask=value || '';
+                            } else if (key=="GATEWAY") {
+                                var edgateway=value || '';
+                            }
+                            // REGISTER
+                            else if (key=="ACCOUNT") {
+                                var edaccount=value || '';
+                            } else if (key=="TOKEN") {
+                                var edtoken=value || '';
+                            } else if (key=="TOKEN_LAST_TS") {
+                                var edtoken_last_ts=value || '';
+                            } 
+                            // DEVICE
+                            else if (key=="BILL_ACCEPTOR_PORT") {
+                                var edbill_acceptor_port=value || '';
+                            }
+                        }
+                        // header:
                         kernel_ver.textContent +=  "NO INFO";
-                        ipaddr.textContent += config[IPADDR];            
-                        current_dt.textContent = "Current date/time: " + formattedDate + " " + formattedTime;              
-                        home_url.textContent += data.config[HOME_URL];
-                        title.textContent += data[TITLE];
-                        asset.textContent += data.appInfo.ASSET;
-                        account.textContent += data.appInfo.ACCOUNT;
-                        token.textContent += data.appInfo.TOKEN;
-                        remark.textContent += data.appInfo.REMARK;
+                        ipaddr.textContent += edipaddr;            
+                        current_dt.textContent += " " + formattedDate + " " + formattedTime;              
+                        home_url.textContent += edhome_url;                        
+                        title.textContent += edtitle;
+                        asset.textContent += edasset;
+                        account.textContent += edaccount;
+                        token.textContent += edtoken;
+                        remark.textContent += edremark;
+
+                        // display form:
+                        // form1:
+                        
+                        if (edbootprot == 'static') {
+                            document.getElementById('static').checked = true;
+                            showField(2);
+                        } else {
+                            document.getElementById('dhcp').checked = true;
+                        };
+                        document.getElementById('IPADDR_f1').value = edipaddr;
+                        document.getElementById('NETMASK_f1').value = ednetmask;
+                        document.getElementById('GATEWAY_f1').value = edgateway;
+
+                        // form2:
+                        document.getElementById('TITLE_f2').value = edtitle;
+                        document.getElementById('REMARK_f2').value = edremark;
+
+                        // form2.timezone            
+                        const timezoneString = edtime_zone_list;
+                        const timezones = timezoneString.split(",");                        
+                        const select = document.getElementById("TIME_ZONE");
+                        
+                        // Populate the select list
+                        timezones.forEach(function(zone) {
+                            const option = document.createElement("option");
+                            option.value = zone;
+                            option.textContent = zone;
+                            // Pre-select the matching timezone
+                            if (zone == edtime_zone) option.selected = true;
+                            select.appendChild(option);
+                        });
+
+                        // form2.timeformat
+                        const timeformatString = edtime_format_list;
+                        const timeformat = timeformatString.split("|");                        
+                        const selectformat = document.getElementById("TIME_FORMAT");                        
+                        // Populate the select list
+                        timeformat.forEach(function(zone) {
+                            const option = document.createElement("option");
+                            option.value = zone;
+                            option.textContent = zone;
+                            // Pre-select the timeformat
+                            if (zone == edtime_format) option.selected = true;
+                            selectformat.appendChild(option);
+                        });
+
+                        // form2.currency symbol
+                        const currencysymbolString = edcurrency_symbol_list;
+                        const symbolformat = currencysymbolString.split(",");                        
+                        const selectsymbol = document.getElementById("CURRENCY_SYMBOL");                        
+                        // Populate the select list
+                        symbolformat.forEach(function(symbol) {
+                            const option = document.createElement("option");
+                            option.value = symbol;
+                            option.textContent = symbol;
+                            // Pre-select the currency symbol
+                            if (symbol == edcurrency_symbol) option.selected = true;
+                            selectsymbol.appendChild(option);
+                        });   
+                        
+                        // CURRENCY_SYMBOL_PRINT_SIDE
+                        if (edcurrency_symbol_print_side == 'right') {
+                            document.getElementById('right').checked = true;
+                            showField(2);
+                        } else {
+                            document.getElementById('left').checked = true;
+                        };
+
+                        // THOUSAND_SEPARATOR
+                        if (edthousand_separator == ',') {
+                            document.getElementById('comma').checked = true;
+                            showField(2);
+                        } else if (edthousand_separator == '.') {
+                            document.getElementById('dot').checked = true;
+                        } else {
+                            document.getElementById('space').checked = true;
+                        };
+
+                        // form2.home url edhome_url1  edhome_url2
+                        const urlString = edhome_url1 + "," + edhome_url2
+                        const urlformat = urlString.split(",");                        
+                        const selecturl = document.getElementById("HOME_URL");                        
+                        // Populate the select list
+                        urlformat.forEach(function(url) {
+                            const option = document.createElement("option");
+                            option.value = url;
+                            option.textContent = url;
+                            // Pre-select the currency symbol
+                            if (url == edhome_url) option.selected = true;
+                            selecturl.appendChild(option);
+                        });
+
+                        document.getElementById('ASSET_f2').value = edasset;
+
+                        // form3
+                        document.getElementById('ACCOUNT_f3') = edaccount
+                        document.getElementById('TOKEN_f3') = edtoken                        
+                        document.getElementById('TOKEN_LAST_TS_f3') = edtoken_last_ts
+                        if (edtoken=="Valid") { 
+                            document.getElementById('TOKEN_f3') += " from " + edtoken_last_ts
+                        }
 
                     },
                     error: function(xhr) {
                         alert("Ajax request 發生錯誤")
                     }
                 });            
-            });            
+            });
     </script>
     <script>
         function showForm(formId) {
@@ -324,6 +475,39 @@
             selectedForm.style.display = 'block';
             }
         }
-    </script>    
+    </script>
+    <script>
+        function showField(fieldId) {
+        //   // Hide all fields
+        //   document.getElementById('emailField').style.display = 'none';
+        //   document.getElementById('phoneField').style.display = 'none';
+        //   document.getElementById('mailField').style.display = 'none';
+          // Show the selected field
+            if (fieldId == 1) {
+                document.getElementById('staticfield').style.display = 'none';
+            } else {
+                document.getElementById('staticfield').style.display = 'inline';
+            }
+        }
+    </script>
+    <script>
+        function token_action(action) {
+            if (action == 0) {
+
+            } else {
+
+            }
+        }
+    </script>
+    <script>
+        function test_login() {
+
+        }
+    </script>
+    <script>
+        function test_bill(action) {
+            
+        }
+    </script>
 </body>
 </html>
