@@ -2,155 +2,11 @@
 #-*- coding:UTF-8 -*-
 
 import os, time, sys
-import threading, queue
+#import keyboard  #don't use
 
 # for global keyboard control
 from pynput import keyboard
 from pynput.keyboard import Key, Listener, Controller
-
-import serial
-
-class ICT_ReceiptPrinter(threading.Thread):
-  def __init__(self, dev: str, read_timeout=0.5, inter_byte_timeout=0.1, write_timeout=1.0, baudrate = 115200):
-    threading.Thread.__init__(self)
-    self.dev = dev
-    self.baurate = baudrate
-    self.read_timeout = read_timeout
-    self.inter_byte_timeout = inter_byte_timeout
-    self.write_timeout = write_timeout
-    
-    self.task_q = queue.Queue(16)
-    self.b_stop = False     # stop this thread
-    #self.event = threading.Event()
-    #self.io_lock = threading.Lock()
-
-    self.b_opened = False       # True if open('/dev/ttyACM0', ...) success
-    self.b_ready = False        # True if completing all of reset => set the ESC/POS => get the first status
-    self.status = 0x8000
-    pass
-  
-  def stop(self):
-     b_stop = True
-  
-  # call start() to start run()
-  def run(self):
-    while not self.b_stop:
-      # phase 1: if not opened, open it
-      if not self.b_opened:
-        try 
-          handle = serial.Serial(self.dev, self.baurate, 8, 'N', 1, xonxoff=True,
-              timeout=self.read_timeout, inter_byte_timeout=self.inter_byte_timeout, write_timeout=self.write_timeout)
-          if handle.is_open:
-            self.b_opened = True
-            self.b_ready = False
-        except ValueError as e:
-          print('value except:', e)
-        except serial.serialutil.SerialException as e:   # FileNotFoundError
-          print('serial except:', e)
-        except Exception as e:
-          print('except:', e)
-        
-        if not self.b_opened:
-          time.sleep(2)
-          continue
-
-        # restore to factory default: 無底線、取消反白、單倍寬、單倍高、16x24 字型、ASCII 編碼模式、字元靠左對齊、一維條碼位置重置、一維條碼高 140 點: 1B 40
-        # (no response)
-        handle.write(b'\x1b\x40')
-        time.sleep(0.5)
-
-      if not self.b_ready:
-        try
-          # Reset printer  (Just reset inner task, no setting changed)
-          # (no response)
-          handle.write(b'\x1b\x72\x00')
-
-          # Switch to ESC/POS protocol
-          # return \x1b\x23 (ESC #) if success
-          handle.write(b'\x1b\x23')
-          handle.flush()
-          ret = handle.read(64)
-          print('protocol:', ret)
-          if ret == b'\x1b\x23':
-            # read printer status
-            handle.write(b'\x1d\x61')
-            handle.flush()
-            ret = handle.read(64)
-            print('status:', ret)
-            self.status = int.from_bytes(ret, "little")
-            self.b_ready = True
-        except serial.serialutil.SerialException as e:      # OSError
-          print('serial except:', e)
-          self.b_opened = False
-        except Exception as e:
-          print('except:', e)
-          self.b_opened = False
-
-        if not self.b_opened:
-          try
-            handle.close()
-          except:
-            pass
-        time.sleep(0.5)
-
-      if self.b_ready
-        # phase 2: if there is task, do it; else check status regularily.
-        task = None
-        try
-          task = task_q.get(timeout = 1.0)
-        except queue.Empty:
-          pass  # no data in queue
-        except Exception as e:
-          print('except:', e)
-          
-        # if there is task, ...
-        if task is not None:
-          # output to receipt printer
-            
-        # if no task, read status
-        else:
-     
-
-  # push page task to queue 
-  # return > 0: success and the value tells how many jobs in task queue
-  # return -1: no link or current is not in state of able to print
-  # return -2: failure, queue mechanism error (queue full or was shut down, this is logic error)
-  def print_page(self, page_data: str): int
-    if not self.b_ready:
-      return -1
-
-    try
-      if self.task_q.full():
-        return -2     # output queue full
-      self.task_q.put(page_data, timeout = 0.1)
-    except Exception as e:
-      print('except:', e)
-      return -2
-    # trigger event
-    #self.event.set()
-  
-  # return: int
-  #   --- low byte below
-  #   bit0=1 cover open or no paper on thermal head
-  #   bit1=1 roller paper empty
-  #   bit2=1 cutter malfunction
-  #   bit3=1 anti-pulling sensor masked  (只適用於有防拉機型)
-  #   bit4=1 check-sum error
-  #   bit5=1 no SD card ready
-  #   bit6=1 abnormal temperature
-  #   bit7=1 SD file error
-  #   --- high byte below
-  #   bit8=1 roller paper low level warning
-  #   bit9=1 out paper sensor mask  (for model NNX only)
-  #   bit10=1 paper jam
-  #   bit11~bit14 (reserved)
-  #   bit15=1 lost link (no port or cable disconnected) ->fail to switch to ESC/POS or cannot read status
-  def get_status(self): int
-    if self.b_ready:
-      return self.status | 0x8000
-    return self.status
-
-  
 
 # for browser/window control
 from selenium import webdriver
@@ -184,6 +40,23 @@ else:
   printf('Driver for firefox not found!')
   sys._exit(1)
 
+# read token from file
+token = None
+if os.path.isfile('./token.txt'):
+  try:
+    with open('./token.txt', "r") as f:
+      for line in f:
+        token = line.strip()
+        print('read token: (',token,')',sep='')
+        break
+  except Exception as e:
+    print(e)
+else:
+  print('token file ./token.txt not found')
+
+if token is None:
+  os._exit(1)
+
 # use EWMH module
 ewmh = EWMH()
 
@@ -212,7 +85,7 @@ dummy_tab_handle = driver.current_window_handle
 # 開啟遊戲分頁.
 driver.switch_to.new_window('tab')
 game_tab_handle = driver.current_window_handle
-driver.get('https://demo.n1s168.com/#/eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiY2MwMTdiZWQ4N2M4ODA4ZTVjMDIwMmNiYjJiZDViNzRjZGI4MjRjY2Y4MDgxZTgxYjMyMDNmMWZlYWExOTQyMTM4OWM0OWFmMmE5ZTI0NjgiLCJpYXQiOjE3NDU1NzM4MjQuODc0OTc5LCJuYmYiOjE3NDU1NzM4MjQuODc0OTgzLCJleHAiOjE3NzcxMDk4MjQuODYwMDYxLCJzdWIiOiIzMDAzOCIsInNjb3BlcyI6W119.xyl-PVabt8yJzW2ppC_VQyfAb5-KEsDJsnFjHME0TTk_rW4mmeJz796Zxs6CGwSgFc75oGYjSrGVloUvQ1mjh3xUrjpjg2G9jvMpdrGaobquXH9si7s971-8wGCrsbSLybB4JFJKtQHh5OY9CdM7HIVqTn3ukQ8YTDN-0Q8eHDZpPkOZo7rERHJHNOcgmgw1HVOxR8XuGhmWB7bxD7Be6fr2U3q1jOFaP_90u3ZVlSHBj8jqcnKqPCQdcI8ZIdA39YswYfS86t9rITSTGnZTmIvuooxyoR16I44DfesJ9pUYQCB85my39koaXG3vdMCqqrcZaFzATC_2RPa57859RnYYIveqgTxr8tWAWON4Hdl4ci0QfP5CcoD6FkC0PsInZFj5pHm58jo3E92RCw4BuGO9JhQhcvxAsKaaGz2MOwzj7pZSmF-CQ5qH0apYEr9xr1qgGwAWVWkeWmhPvfUrTt2i29t-9qW2Wz05XFTtu8BORp760jSR1uujIDsEK7Y-feol7bxJsQdNEFzii2Em-BbqO5MqG5KGjnePMS6BcdQx2EYnfmcE_dKRQfoY2CvDsZXzcUoCijpPJqMWhTGxrl5MWEo2vos4szb79_TMAv4cHsztCigoq-KBVGiR4GBSkDDXKcK0Go1LRonFPgcTECDdVCwOPWEwSxbgWbuPxDk')
+driver.get('https://demo.n1s168.com/#/' + token)
 # 以下加入 javascript 來攔截事件. 但經過實驗, 一旦 reload 後就會失效/
 # 避免 right click 叫出 contentmenu
 driver.execute_script('document.addEventListener("contextmenu", function(e) {e.preventDefault();});')
@@ -297,23 +170,25 @@ def on_button(func: str):
   elif func == 'cashout':
     pass
   elif func == 'home':
-      driver.switch_to.window(game_tab_handle)
-      print('URL:', driver.current_url)
-      if not driver.current_url.startswith('https://demo.n1s168.com/#/'):
-        print('Reload HOME page')
-        driver.get('https://demo.n1s168.com/#/')
+    driver.switch_to.window(game_tab_handle)
+    print('URL:', driver.current_url)
+    if not driver.current_url.startswith('https://demo.n1s168.com/#/'):
+      print('Reload HOME page')
+      driver.get('https://demo.n1s168.com/#/' + token)
   elif func == 'vol+':
+    os.system('amixer set Master 5%+')
     pass
   elif func == 'vol-':
+    os.system('amixer set Master 5%+')
     pass
   elif func == 'refresh':
     pass
   elif func == 'operator':
-      driver.switch_to.window(setting_tab_handle)
-      print('URL:', driver.current_url)
-      if not driver.current_url.startswith('https://127.0.0.1:631'):
-        print('Reload SETTING page')
-        driver.get('https://127.0.0.1:631')
+    driver.switch_to.window(setting_tab_handle)
+    print('URL:', driver.current_url)
+    if not driver.current_url.startswith('https://127.0.0.1:631'):
+      print('Reload SETTING page')
+      driver.get('https://127.0.0.1:631')
     
 loop = True
 def req_quit():

@@ -17,7 +17,7 @@ Version 1.2rc2
   ITgame03@n1s.com / ITgame03
 
 - API 測試接口 
-  - API HOST(base_url}: https://dev-api.n1s168.com
+  - API HOST(base_url}: https://api.n1s168.com   (舊版為 dev-api.n1s168.com)
   - for 登入:
     {base_url}/api/v1/user/login/
     ACCOUNT: ITgame01

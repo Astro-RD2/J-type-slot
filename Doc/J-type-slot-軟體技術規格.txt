@@ -76,21 +76,21 @@ VMware Image 版本控制
     右下出現齒輪, 選擇 Ubuntu on Xorg, 使切換到使用 X11 而非內定的 Wayland
 
 (2) 使用 GDM3 登入, xfce4 桌面
-  https://linuxcapable.com/how-to-install-xfce-on-ubuntu-linux/
-  $ apt install xfce4 xfce4-googies
-  $ reboot
-  Select 'xfce' on login UI
-  
-  $ xfce4-power-manager
-  When power bottom is pressed -> Shutdown
-  System power saving => When inactive for -> Never
-  Display power management => (disabled)
-  Blank after => Never
-  Automatically lock the session -> Never
-  
-  將 WorkSpaces 縮減到 1 個 (內定 4 個 )
-  Applications => Settings => Workspaces
-  
+  - 安裝
+    https://linuxcapable.com/how-to-install-xfce-on-ubuntu-linux/
+    $ apt install xfce4 xfce4-googies
+    $ reboot
+  - Select 'xfce' on login UI
+    登出, 選擇某帳號. 接下來會出現齒輪, 裡面可選擇 xfce4
+  - 使不進入休眠:
+    $ xfce4-power-manager
+    When power bottom is pressed -> Shutdown
+    System power saving => When inactive for -> Never
+    Display power management => (disabled)
+    Blank after => Never
+    Automatically lock the session -> Never
+  - 將 WorkSpaces 縮減到 1 個 (內定為 4 個, 太多了):
+    Applications => Settings => Workspaces
 
 (3) 使開機後能自動以 root 帳號登入 GNOME/GDM
   - 參考 https://hackmd.io/@Cyui/B1YnFwT8R
@@ -102,13 +102,19 @@ VMware Image 版本控制
   $ apt upgrade
 
 (5) 移除 snap firefox, 改安裝 DEB firefox
-  參考步驟: https://www.omgubuntu.co.uk/2022/04/how-to-install-firefox-deb-apt-ubuntu-22-04
-  步驟有點複雜, 但還算明確.
-  如果不進行此, 會發生對 keyboard input 失效的情況. 原因是 snap 內的 firefox 與部分套件的整合不一致.
-  測試:
-  # 確認可以自命令列執行瀏覽器 (browser).
-  $ firefox -kiosk -private-window "https://www.google.com"   可以成功全畫面、隱私分頁. (按下 Alt-F4 關閉應用程式)
-
+  - 參考步驟: https://www.omgubuntu.co.uk/2022/04/how-to-install-firefox-deb-apt-ubuntu-22-04
+    步驟有點複雜, 但還算明確.
+    如果不進行此, 會發生對 keyboard input 失效的情況. 原因是 snap 內的 firefox 與部分套件的整合不一致.
+  - 測試:
+    # 確認可以自命令列執行瀏覽器 (browser).
+    $ firefox -kiosk -private-window "https://www.google.com"   可以成功全畫面、隱私分頁. (按下 Alt-F4 關閉應用程式)
+  - 設定瀏覽器 (於瀏覽器之 Setting 內)
+    General => Browsing => Recommend features as you browse => Unchecked
+    Home => New Windows and Tabls => Homepage and new windows => Blank Page
+    Home => New Windows and Tabls => New tabs => Blank Page
+    Privacy & Security => Passwords => Ask to save passwords => Unchecked
+    Privacy & Security => Firefox Data Collection and Use => Unchecked total
+  
 (6) 安裝 sshd
   $ apt install ssh
 
@@ -133,17 +139,6 @@ VMware Image 版本控制
   $ apt install python3-pip
   $ apt install python-is-python3    <-- 不要此. 因為 virtual environment 會自動產生 'python' 至對應 python 版本
   $ apt install python3-venv
-
-建立 Python 虛擬環境 base
-  $ mkdir /root/py-venv/
-  $ python -m venv /root/py-venv/base
-  $ source /root/py-venv/base/bin/activate   <-- 啟動虛擬環境. (可放在開機批次檔)
-  $ deactivate    <-- 結束虛擬環境
-  方便切換至 python virtual environment, 故進行如下建置:
-    $ echo "alias py-activate-base='source /root/py-venv/base/bin/activate'" >> /root/.bashrc_aliases
-    $ py-activate-base   <-- 之後執行此即可切換.
-    $ vi /root/.profile    # 編輯 /root/.profile, 末尾加上
-    source /root/py-venv/base/bin/activate
 
 (10) 安裝需要的 utility
   $ sudo apt install yad
@@ -208,7 +203,6 @@ VMware Image 版本控制
   $ pip install cryptocode
   $ pip install pynput
   $ pip install keyboard
-  $ pip install keyboard
 
 
 ============================================================
@@ -258,11 +252,12 @@ VMware Image 版本控制
     /var/astro/data/setting.ini-default                 內定(出廠)設定檔
 
 - Configuration file
+  - 詳見文件: "J-type-slot-軟體系統需求規格.txt"
   - 設定檔案名稱與位置 (Runtime/Embedded): 
     /root/astro/data/setting.ini (實際位置 /var/astro/data/setting.ini)
     /var/astro/data/setting.ini-default  <-- 不更動此, 供回復出廠值.
-  - 原始定義/來源:
-    C:\Work\AsProjects\J-type-slot\Src\Configuration-files-templete\setting.ini-default
+  - 檔案原始定義/來源:
+    J-type-slot\Src\Configuration-files-templete\setting.ini-default
 
 - Log rotate 設定
   (todo)
@@ -270,7 +265,7 @@ VMware Image 版本控制
 - Screen 設定 (Portrait, 原本螢幕順時針轉 90 度)
   - For Gnome: Ubuntu settings => Display => Portrait Right
     For xfce4: Applications => Settings => Display => General => Rotate => Left
-  - (optional) 讓登入畫面也
+  - (optional) 讓登入畫面也順時針轉 90 度.
     參考: https://askubuntu.com/questions/1003964/how-to-rotate-login-screen-in-gdm3  
     $ cp /root/.config/monitors.xml /var/lib/gdm3/.config/
     $ chown gdm:gdm /var/lib/gdm3/.config/monitors.xml
@@ -305,16 +300,16 @@ VMware Image 版本控制
   import requests
   from requests_toolbelt.utils import dump      # for debug
 
-  url = 'https://dev-api.n1s168.com/api/v1/user/login/'
+  url = 'https://api.n1s168.com/api/v1/user/login/'
   headers = {"Content-Type": "application/json"}
   data = { "account": "ITgame01", "password": "ITgame01" }
   
-  try 
+  try:
     response = requests.post(url, json=data, headers=headers)
     # if success, handle it ...
     if response.status_code == 200:
       json_data = response.json()    # 取得 json 物件.
-  except
+  except:
     # error
 
   # below two rows, is for debug only
@@ -524,6 +519,17 @@ VMware Image 版本控制
         send: 0D
         recv: (none)
 
+  - 避免 coredump generation
+    經過觀察, 已經設定 ulimit -c 0, 表示 coredump 檔案大小上限為 0
+
+- 懸浮鍵盤
+  - 安裝 onboard
+    https://askubuntu.com/questions/1426352/how-to-get-on-screen-keyboard-osk-to-work-like-a-mobile-device
+    $ sudo apt install onboard
+    (安裝過程會出現 error, 但依然可安裝與執行.)
+  - 然後設定:
+    $ onboard-setting
+    在 Layout 內選擇 Grid (選擇其它的要不然太複雜, 要不然會有 bug)(Grid 雖無 bug, 但範圍很小)
 
 
 ================================================================
@@ -821,14 +827,14 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
   如果直接於 requests 內使用參數 json=<dict object>, 內部直接會轉換成 json, 且 header 內自動加上  Content-Type: application/json
 
   登入:
-  #HOST https://dev-api.n1s168.com
+  #HOST https://api.n1s168.com
   #ACCOUNT: ITgame01
   #PASSWORD: ITgame01
 
   import requests
   from requests_toolbelt.utils import dump      # for debug
 
-  url = 'https://dev-api.n1s168.com/api/v1/user/login/'
+  url = 'https://api.n1s168.com/api/v1/user/login/'
   headers = {"Content-Type": "application/json"}
   data = { "account": "ITgame01", "password": "ITgame01" }
   
@@ -1015,26 +1021,8 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
     安裝: sudo apt install onboard
     目前安裝過程會出現 error, 但依然可安裝與執行.
     另外, 覺得執行結果比不上 Florance 友善, 會搶 cursor.
-  - GOK (Gnome 的屏幕键盘)，kvkbd，onboard
+  - GOK (Gnome 的屏幕键盘):找不到，kvkbd:太複雜，onboard:可以
   
-- 設定檔案
-  進階 ini 格式: 支援單一變數多行 value; 支援代入${name}; '#' 或 ';' 為註解.
-  使用範例: https://docs.python.org/3/library/configparser.html
-  -- 範例: example.ini ----------------------------------------
-  [DEFAULT]
-  ServerAliveInterval = 45
-  Compression = yes
-  CompressionLevel = 9
-  ForwardX11 = yes
-
-  [forge.example]
-  User = hg
-  # comment: no more data after User under [forge.example]
-
-  [topsecret.server.example]
-  Port = 50022
-  ForwardX11 = no
-
 - 透過 key 來加密字串, 並只能用同一 key 才能解密
   https://stackoverflow.com/questions/27335726/how-do-i-encrypt-and-decrypt-a-string-in-python
   安裝: pip install cryptocode
@@ -1066,6 +1054,17 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
 - 列印  
   - 插入 ICT SP1 printer USB, 會顯示如下裝置 /dev/ttyACM0:
     echo -e -n '\x1B\xF0' > /dev/ttyACM0
+
+- 建立 Python 虛擬環境 base 方式
+  $ mkdir /root/py-venv/
+  $ python -m venv /root/py-venv/base
+  $ source /root/py-venv/base/bin/activate   <-- 啟動虛擬環境. (可放在開機批次檔)
+  $ deactivate    <-- 結束虛擬環境
+  方便切換至 python virtual environment, 故進行如下建置:
+    $ echo "alias py-activate-base='source /root/py-venv/base/bin/activate'" >> /root/.bashrc_aliases
+    $ py-activate-base   <-- 之後執行此即可切換.
+    $ vi /root/.profile    # 編輯 /root/.profile, 末尾加上
+    source /root/py-venv/base/bin/activate
 
 - 網路設定:
   - UI: /usr/bin/nm-connection-editor
