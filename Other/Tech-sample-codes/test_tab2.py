@@ -37,7 +37,7 @@ if os.path.isfile('./geckodriver'):
 elif os.path.isfile('/snap/bin/firefox.geckodriver'):
   service = Service(executable_path='/snap/bin/firefox.geckodriver')
 else:
-  printf('Driver for firefox not found!')
+  print('Driver for firefox not found!')
   sys._exit(1)
 
 # use EWMH module
@@ -122,7 +122,7 @@ for w in wins:
 
 # if not being launched, this is logic error!
 if browser_win == -1:
-  printf('Firefox browser not foune! Logic error!')
+  print('Firefox browser not foune! Logic error!')
   driver.quit()
   sys._exit(1)
 

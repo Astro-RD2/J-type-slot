@@ -140,7 +140,7 @@ VMware Image 版本控制
   $ source /root/py-venv/base/bin/activate   <-- 啟動虛擬環境. (可放在開機批次檔)
   $ deactivate    <-- 結束虛擬環境
   方便切換至 python virtual environment, 故進行如下建置:
-    $ echo "alias py-activate-base='source /root/py-venv/base/bin/activate'" >> /root/.bashrc_aliases
+    $ echo "alias py-activate-base='source /root/py-venv/base/bin/activate'" >> /root/.bash_aliases
     $ py-activate-base   <-- 之後執行此即可切換.
     $ vi /root/.profile    # 編輯 /root/.profile, 末尾加上
     source /root/py-venv/base/bin/activate
