@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#-*- coding:UTF-8 -*-
+# -*- coding: UTF-8 -*-
 
 from selenium import webdriver
 import keyboard
@@ -7,30 +7,26 @@ import time
 
 options = webdriver.FirefoxOptions()
 options.add_argument("-private")
-#options.add_argument("--kiosk")
 driver = webdriver.Firefox(options=options)
-driver.get("about:blank")
 
 def main():
     global driver
+    tabs = {}
 
-    print("Press 'q' or 'Q' to quit.")
-    while True:
-        if keyboard.read_event(suppress=True).name in ['q', 'Q']:
-            print("Exiting...")
-            break
-        elif keyboard.read_event(suppress=True).name in ['o', 'O']:
-            print("Opening a new Firefox tab...")
-            driver.execute_script("window.open('about:blank', '_blank');")
-        elif keyboard.read_event(suppress=True).name == 'esc':
-            print("Closing the current Firefox tab...")
-            driver.execute_script("window.close();")
-        time.sleep(0.01)
-    
-    driver.quit();
+    dummy_tab_handle = driver.current_window_handle
+    print(f'dummy handle: ', dummy_tab_handle)
+
+    driver.execute_script("window.open('about:privatebrowsing', '_blank');")
+    driver.switch_to.window(driver.window_handles[-1])
+    tabs["tab1"] = driver.current_window_handle
+    print("tab1 handle: ", tabs["tab1"])
+
+    driver.switch_to.window(dummy_tab_handle)
+    driver.close()
+    time.sleep(2)
+
+    driver.quit()
     print("Firefox closed.")
-
-    exit(0)
 
 if __name__ == "__main__":
     main()
