@@ -294,31 +294,42 @@ VMware Image 版本控制
 - 讀取設定檔案
   設定檔案之位置、內容, 使用方式, 請參考文件 "J-type-slot-軟體系統需求規格.txt" 內, 第 2, 3 章節.
 
-- 開機後自動啟動程式放置於 ~/.profile.
+- 開機後自動啟動程式請放置於 ~/.profile.
 
-- 登入遊戲 API server, 取得 token 之程式範例
-  import requests
-  from requests_toolbelt.utils import dump      # for debug
+- 登入遊戲 API server
+  - 程式範例:
+    import requests
 
-  url = 'https://api.n1s168.com/api/v1/user/login/'
-  headers = {"Content-Type": "application/json"}
-  data = { "account": "ITgame01", "password": "ITgame01" }
+    url = 'https://api.n1s168.com/api/v1/user/login/'
+    headers = {"Content-Type": "application/json"}
+    data = { "account": "ITgame01", "password": "ITgame01" }
   
-  try:
-    response = requests.post(url, json=data, headers=headers)
-    # if success, handle it ...
-    if response.status_code == 200:
-      json_data = response.json()    # 取得 json 物件.
-  except:
-    # error
+    try:
+      response = requests.post(url, json=data, headers=headers)
+      # if success, handle it ...
+      if response.status_code == 200:
+        json_data = response.json()    # 取得 json 物件.
+    except:
+      # error
+      pass
 
-  # below two rows, is for debug only
-  data = dump.dump_all(response)
-  print(data.decode('utf-8'))
-  
-  print(response.status_code)  # 取得回應 code, 如果為 '200' 表示成功
-  print(response.json())  # 取得回應 body
+    print(response.status_code)  # 取得回應 code, 如果為 '200' 表示成功
+    print(response.json())  # 取得回應 body
 
+  - Result code
+    參考: https://restfulapi.net/http-status-codes/
+    1xx Status Codes [Informational]  (transport incompleted yet)
+    2xx Status Codes [Success]
+      200 OK
+    3xx Status Codes [Redirection]
+    4xx Status Codes (Client Error)
+      400 Bad Request   (syntax error, kind of logic error)
+      401 Unauthorized  (no or incorrect authorization info.)
+      403 Forbidden
+      404 Not Found
+      405 Method Not Allowed
+      406 Not Acceptable
+      ... (many)
 
 - 按鍵系統攔截與模擬:
   - 請參考範例程式: J-type-slot/Other/Tech-sample-codes/test_tab2.py

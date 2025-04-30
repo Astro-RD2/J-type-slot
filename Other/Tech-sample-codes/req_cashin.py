@@ -52,8 +52,8 @@ try:
   # if success, handle it ...
   if response.status_code >= 200 and response.status_code < 300:
     json_data = response.json()    # 取得 json 物件.
-    print('response body:', json_data)  # 印出回應 body
-    print('status:', json_data['status'])
+    print('Response body:', json_data)  # 印出回應 body
+    print('Status:', json_data['status'])
     if json_data['status'][:2] == '0-':
         do_phase2 = True
   else:
@@ -71,6 +71,7 @@ print('[BEGIN PHASE 2]')
 TX_id = json_data['TXID']
 value = json_data['value']
 
+print('Simulate stacking...')
 time.sleep(3)
 
 url = 'https://api.n1s168.com/api/v1/deposit/jtype/end-cashin'
@@ -85,16 +86,16 @@ data = {
   "TXID": TX_id,
   "dateTime": datetime.datetime.now(datetime.timezone.utc).strftime('%FT%T.%f')[:-3] + 'Z'
 }
-print('req headers:', headers)
-print('req body', data)
+print('Req headers:', headers)
+print('Req body', data)
 
 try:
   response = requests.post(url, json=data, headers=headers)
   # if success, handle it ...
   if response.status_code >= 200 and response.status_code < 300:
     json_data = response.json()    # 取得 json 物件.
-    print('response body:', json_data)  # 印出回應 body
-    print('status:', json_data['status'])
+    print('Response body:', json_data)  # 印出回應 body
+    print('Status:', json_data['status'])
   else:
     print('failure! status_code:', response.status_code)
 except Exception as e:
