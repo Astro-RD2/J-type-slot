@@ -28,18 +28,6 @@ from ewmh import EWMH
 # Tab#1: the game page;    URL: https://demo.n1s168.com/#/<token>
 # Tab#1: the setting page; URL: https://127.0.0.1:631    暫定.
 #########################################################
-
-# 設定 geckodriver 路徑
-#if os.name == 'nt':
-#  service = Service(executable_path='C:/selenium/geckodriver.exe')
-if os.path.isfile('./geckodriver'):
-  service = Service(executable_path='./geckodriver')
-elif os.path.isfile('/snap/bin/firefox.geckodriver'):
-  service = Service(executable_path='/snap/bin/firefox.geckodriver')
-else:
-  print('Driver for firefox not found!')
-  sys._exit(1)
-
 # read token from file
 token = None
 if os.path.isfile('./token.txt'):
@@ -56,6 +44,18 @@ else:
 
 if token is None:
   os._exit(1)
+
+
+# 設定 geckodriver 路徑
+#if os.name == 'nt':
+#  service = Service(executable_path='C:/selenium/geckodriver.exe')
+if os.path.isfile('./geckodriver'):
+  service = Service(executable_path='./geckodriver')
+elif os.path.isfile('/snap/bin/firefox.geckodriver'):
+  service = Service(executable_path='/snap/bin/firefox.geckodriver')
+else:
+  print('Driver for firefox not found!')
+  sys._exit(1)
 
 # use EWMH module
 ewmh = EWMH()

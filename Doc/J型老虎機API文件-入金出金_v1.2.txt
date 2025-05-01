@@ -220,7 +220,7 @@ J-Type Slot API 文件 (J型老虎機)
           "dateTime": "2025-04-10T13:58:02.791Z"    # pending 紀錄建立時間 (見下面格式說明)
         }
 
-    (2) 出金確認 (end-cashin):
+    (2) 出金確認 (end-cashout):
       Method: POST
       Content-Type: application/json
       Authorization: Bearer <token>
