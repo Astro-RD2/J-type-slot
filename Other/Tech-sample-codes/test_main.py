@@ -81,7 +81,7 @@ home_url = 'https://demo.n1s168.com/#/'
 
 # 啟動選項（這裡你也可以加入 --kiosk）
 options = Options()
-#options.add_argument('-kiosk')  # 無邊框、全螢幕模式
+options.add_argument('-kiosk')  # 無邊框、全螢幕模式
 options.add_argument('-private-window')
 #options.add_argument('--window-position=0,0')
 #options.add_argument('--width=768')   # 根據你螢幕調整
@@ -108,7 +108,7 @@ driver.execute_script('document.addEventListener("contextmenu", function(e) {e.p
 
 # let game page active
 driver.switch_to.window(game_tab_handle)
-web_wait_obj = WebDriverWait(driver, 10)
+#web_wait_obj = WebDriverWait(driver, 10)
 
 assert len(driver.window_handles) == 2
 
@@ -206,9 +206,9 @@ def find_css_element(name:str, timeout_sec = 0.0):
     ele = None
     ts = time.time()    # 取得 timestamp (float)(second)
     try:
-        if timeout_sec < 0.0000001
+        if timeout_sec < 0.0000001:
             ele = driver.find_element(By.CSS_SELECTOR, name)
-        else
+        else:
             ele = WebDriverWait(driver, timeout_sec).until(EC.element_to_be_clickable((By.CSS_SELECTOR, name)))
 
     except selenium.common.exceptions.TimeoutException:         # 超過設定時間依然未載入完成.

@@ -169,9 +169,9 @@ class ICT_SP1_ReceiptPrinter(threading.Thread):
             except serial.SerialTimeoutException as e:
                 print('serial write except:', e)
                 self.b_opened = False
-            #except Exception as e:
-            #    print('except1:', e)
-            #    self.b_opened = False
+            except Exception as e:
+                print('except1:', e)
+               self.b_opened = False
    
         if not self.b_opened:
             self.b_ready = False
