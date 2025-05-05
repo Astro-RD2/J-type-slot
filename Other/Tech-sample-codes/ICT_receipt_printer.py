@@ -8,23 +8,37 @@ import keyboard
 import serial
 
 class ICT_SP1_ReceiptPrinter(threading.Thread):
-    def __init__(self, dev: str, read_timeout=0.5, inter_byte_timeout=0.1, write_timeout=1.0, baudrate = 115200):
+    def __init__(self, dev: str, read_timeout=0.5, inter_byte_timeout_sec=0.1, write_timeout_sec=1.0, baudrate = 115200):
         threading.Thread.__init__(self)
         self.dev = dev
         self.baurate = baudrate
         self.read_timeout = read_timeout
-        self.inter_byte_timeout = inter_byte_timeout
-        self.write_timeout = write_timeout
+        self.inter_byte_timeout_sec = inter_byte_timeout_sec
+        self.write_timeout_sec = write_timeout_sec
         
         self.task_q = queue.Queue(16)
         self.b_stop = False     # stop this thread
         #self.event = threading.Event()
-        #self.io_lock = threading.Lock()
       
         self.b_opened = False       # True if open('/dev/ttyACM0', ...) success
         self.b_ready = False        # True if completing all of reset => set the ESC/POS => get the first status
-        self.status = 0xC000        # bit14=1 and bit13=1: no link and not ready
+        
+        self.status_lock = threading.Lock()
+        self.status = 0b1100000000000000    # bit15=1 and bit14=1: no link and not ready
     
+    # clear all tasks in waiting queue
+    def clear(self):
+        self.status_lock.acquire()
+        while not self.task_q.empty():
+            self.status_lock.release()
+            try:
+                self.task_q.get_no_wait()
+            except:
+                pass
+            self.status_lock.acquire()
+        self.status &= 0b1101111111111111
+        self.status_lock.release()
+
     def stop(self):
         self.b_stop = True
     
@@ -37,16 +51,21 @@ class ICT_SP1_ReceiptPrinter(threading.Thread):
             print('reconnectng to printer ...')
             try:
                 handle = serial.Serial(self.dev, self.baurate, 8, 'N', 1, xonxoff=True,
-                    timeout=self.read_timeout, inter_byte_timeout=self.inter_byte_timeout, write_timeout=self.write_timeout)
+                    timeout=self.read_timeout, inter_byte_timeout=self.inter_byte_timeout_sec, 
+                    write_timeout=self.write_timeout_sec)
                 if handle.is_open:
-                    # restore to factory default: 無底線、取消反白、單倍寬、單倍高、16x24 字型、ASCII 編碼模式、字元靠左對齊、一維條碼位置重置、一維條碼高 140 點: 1B 40
+                    # restore to factory default: 
+                    # 無底線、取消反白、單倍寬、單倍高、16x24 字型、ASCII 編碼模式、字元靠左對齊、一維條碼位置重置、一維條碼高 140 點: 1B 40
                     # (no response)
                     handle.write(b'\x1b\x40')
                     handle.flush()
                     time.sleep(0.5)
                     self.b_opened = True
                     self.b_ready = False
-                    self.sttus = 0x4000     # bit13=1: not ready
+                    self.status_lock.acquire()
+                    # bit14=1: not ready, bit13=1: waiting task available
+                    self.status = 0b0100000000000000 | (self.status & 0b0010000000000000)
+                    self.status_lock.release()
             except ValueError as e:
                 print('value range except:', e)
             except serial.serialutil.SerialException as e:   # FileNotFoundError
@@ -72,24 +91,42 @@ class ICT_SP1_ReceiptPrinter(threading.Thread):
                     handle.write(b'\x1d\x61')
                     handle.flush()
                     ret = handle.read(64)
-                    self.status = int.from_bytes(ret, "little") & 0x7ff
                     #print('status: ' + hex(ret))
-                    self.b_ready = True
-                    time.sleep(0.5)
+                    if len(ret) != 2:
+                        if len(ret) == 0:
+                            print('read timeout')
+                        else:
+                            print('read illegal status (not 2 bytes): ' + hex(ret))
+                        self.b_opened = False
+                    else:
+                        status = int.from_bytes(ret, "little") & 0x7ff
+                        self.status_lock.acquire()
+                        self.status = status | (self.status & 0b0010000000000000)
+                        self.status_lock.release()
+                        self.b_ready = True
+                        time.sleep(0.5)
+
             except serial.serialutil.SerialException as e:      # OSError
                 print('serial except:', e)
                 self.b_opened = False
             except Exception as e:
                 print('except:', e)
                 self.b_opened = False
-   
+
         else:
             # phase 2: if there is task, do it; else check status regularily.
             task = None
             try:
-                task = self.task_q.get(timeout = 1.0)
+                ts = time.time()
+                task = self.task_q.get(timeout = 1.0)   # (second)
+                print('got task. wait',time.time() - ts,'sec')
             except queue.Empty:
-                pass  # no data in queue
+                print('queue empty. wait',time.time() - ts,'sec')
+                # may be empty, but need to confirm
+                self.status_lock.acquire()
+                if self.task_q.empty():
+                    self.status &= 0b1101111111111111
+                self.status_lock.release()
             except Exception as e:
                 print('except:', e)
           
@@ -97,8 +134,13 @@ class ICT_SP1_ReceiptPrinter(threading.Thread):
                 # if there is task, ...
                 if task is not None:
                     print('got a task', task)
+
                     # output to receipt printer
-                    pass
+                    handle.write(task)
+                    handle.write(b'\x0c')
+                    handle.flush()
+                    handle.read(64)         # receive any returned data
+                    print('print done')
                   
                 # if no task, read status
                 else:
@@ -106,18 +148,36 @@ class ICT_SP1_ReceiptPrinter(threading.Thread):
                     handle.write(b'\x1d\x61')
                     handle.flush()
                     ret = handle.read(64)
-                    self.status = int.from_bytes(ret, "little") & 0x7ff
                     #print('status: ' + hex(ret))
+                    ret_len = len(ret)
+                    if ret_len != 2:
+                        print('illegal return len:', ret_len)
+                        if ret_len == 0:
+                            print('read timeout1')
+                        else:
+                            print('read illegal status: ' + hex(ret))
+                            self.b_opened = False
+                    else:
+                        status = int.from_bytes(ret, "little") & 0x7ff
+                        self.status_lock.acquire()
+                        self.status = status | (self.status & 0b0010000000000000)
+                        self.status_lock.release()
+                    
             except serial.serialutil.SerialException as e:   # FileNotFoundError
                 print('serial except:', e)
                 self.b_opened = False
-            except Exception as e:
-                print('except:', e)
+            except serial.SerialTimeoutException as e:
+                print('serial write except:', e)
                 self.b_opened = False
+            #except Exception as e:
+            #    print('except1:', e)
+            #    self.b_opened = False
    
         if not self.b_opened:
             self.b_ready = False
-            self.status = 0xC000
+            self.status_lock.acquire()
+            self.status = 0b110000000000 | (self.status & 0b0010000000000000)
+            self.status_lock.release()
             if handle is not None:
                 try:
                     handle.close()
@@ -139,6 +199,10 @@ class ICT_SP1_ReceiptPrinter(threading.Thread):
             if self.task_q.full():
                 return -2     # output queue full
             self.task_q.put(page_data, timeout = 0.1)
+            self.status_lock.acquire()
+            if not self.task_q.empty():
+                self.status |= 0b0010000000000000
+            self.status_lock.release()
         except Exception as e:
             print('except:', e)
             return -2
@@ -151,6 +215,7 @@ class ICT_SP1_ReceiptPrinter(threading.Thread):
     #   bit1=1 roller paper empty
     #   bit2=1 cutter malfunction
     #   bit3=1 anti-pulling sensor masked  (只適用於有防拉機型)
+    #   --
     #   bit4=1 check-sum error
     #   bit5=1 no SD card ready
     #   bit6=1 abnormal temperature
@@ -159,13 +224,19 @@ class ICT_SP1_ReceiptPrinter(threading.Thread):
     #   bit8=1 roller paper low level warning
     #   bit9=1 out paper sensor mask  (for model NNX only)
     #   bit10=1 paper jam
-    #   bit11~bit13 (reserved)
+    #   bit11   (reserved to 0)
+    #   --
+    #   bit12   (reserved to 0)
+    #   bit13=1 waiting task available
     #   bit14=1 printer not initialized yet
     #   bit15=1 lost link (no port or cable disconnected) ->fail to switch to ESC/POS or cannot read status
     # Remark:
-    #   bit0~bit10 are valid only if bit14=0
+    #   bit0~bit10,bit14 are valid only if bit15=0
     def get_status(self) -> int:
-        return self.status
+        self.status_lock.acquire()
+        status = self.status
+        self.status_lock.release()
+        return status
 
 
 if __name__ == '__main__':
@@ -180,7 +251,18 @@ if __name__ == '__main__':
         global print_id
         print_id += 1
         print('[p] request to print, task', print_id)
-        ret = prn.print_page(str(print_id))
+        '''
+        s = b'\x1c\x45Hello World\x1c\x46\n\n\n' +\
+            #b'serial:' + str(print_id).encode('utf8') + b'\n\n' +\
+            b'Amount: USD$1234.5\n\n' +\
+            b'Terminal ID: 381292\n\n' +\
+            b'TX ID: 123e4567-e89b-12d3-a456-426655440000\n'
+        '''
+        s = b'\x1c\x45Hello World\x1c\x46\n' +\
+            b'Amount: USD$1234.5\n' +\
+            b'Terminal ID: 381292\n' +\
+            b'TX ID: 123e4567-e89b-12d3-a456-426655440000\n'
+        ret = prn.print_page(s)  # str(print_id))
         if ret < 0:
             print('fail to print, ignored')
         else:
@@ -196,8 +278,12 @@ if __name__ == '__main__':
     keyboard.add_hotkey('esc', esc_quit_print)
     keyboard.add_hotkey('p', print_sample_page)
     
+    last_status = 0xffff
     while not b_quit:
-        print('status: ' + hex(prn.get_status()))
+        curr_status = prn.get_status()
+        if curr_status != last_status:
+            print('status: ' + hex(curr_status))
+            last_status = curr_status
         time.sleep(1)
         
     prn.stop()

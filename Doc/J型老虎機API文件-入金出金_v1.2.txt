@@ -5,8 +5,9 @@ J-Type Slot API 文件 (J型老虎機)
 作者: Chance
 更新: v1.0 - 2025/4/13 minor fix
      v1.1 - 2025/4/17 move field 'token' from the json data of request to its header
-     v1.2 - 2025/5/1 依據永宙規格, 將欄位 'value' 的型別改為福點數(float-point number)
-
+     v1.2 - 2025/5/1 依據永宙規格, 將欄位 'value' 的型別改為浮點數(float-point number)
+                     重大概念修正: 對於同一帳號同步入金, 允許多筆入金 PENDING 紀錄共存, 無需要舊紀錄失效.
+                     次要修正: 修正錯字、或補充語意不足之處.
 
 - 關鍵字
   Slot kernel (簡稱 Kernel) - 執行於 Slot 內的主要控制程式.
@@ -65,11 +66,16 @@ J-Type Slot API 文件 (J型老虎機)
   - 中央觀點入金流程注意事項:
     (1) 概念: 針對某一帳號, "req-cashin" 與 "end-cashin" 兩兩成對, 每對對應至一筆入金交易.
     (2) 當收到 "req-cashin", 中央一律為其建立一筆 "入金 pending 紀錄" (以下簡稱 PENDING), 並產生對應之交易序號 TX, 返回此交易序號給 Slot.
-        如果收到時已存在之前 PENDING, 必須先將舊 PENDING 失效 (註記為失效、刪除, 或基本上不管它也可).
+        如果收到時已存在之前 "來自同管道" 的 PENDING, 可將舊 PENDING 失效 (註記為失效、刪除, 或基本上不管它也可).
+        所謂同管道, 例如來自某一機台. 但不做任何處理也沒有關係.
+        如果來自不同管道, 則不需要將既存 PENDING 失效.
+        建議一律對既存都不要處理. (舊版則要求要刪除)
     (3) 當收到 "end-cashin" 時若目前存在 PENDING 且 TX 相同, 將該 PENDING 確認並關閉 (completed), 並進行帳務更新.
-    (4) 當收到 "end-cashin" 時若目前並不存在 PENDING, 或雖存在但 TX 不相同, 則僅需 log 該 "end-cashin" 訊息(供偵錯)隨即丟棄並 "RETURN".
+    (4) 當收到 "end-cashin" 時若目前並不存在 PENDING, 或雖存在但 TX 都不相同, 則僅需 log 該 "end-cashin" 訊息(供偵錯)隨即丟棄並 "RETURN" (1-NO RECORD).
         此情況不對資料庫進行任何狀態變更, 即之前存在的 PENDING 依然有效.
-    (5) 同一時間某一帳號最多只會存在一筆有效 "入金 pending 紀錄".
+    (5) 同一時間某一帳號可以存在多筆有效 "入金 pending 紀錄".
+    (6) 隨時允許透過其它管道(櫃檯網頁)對該帳號進行(人工)入金. 
+        無論從何管道入金, 實際入金時 "不需要" 將已存在 "入金 pending 紀錄" 失效或刪除. (舊版則要求要刪除)
   
   - 入金 API 規格:
     (1) 請求入金授權 (req-cashin):
@@ -80,19 +86,19 @@ J-Type Slot API 文件 (J型老虎機)
         {
           "action": "req-cashin",    # 請求名稱
           "currency": "USD",         # 幣別 (見下面格式說明)
-          "value": 100.0             # 紙鈔面額 (number)(單位: 元/dollar/pound/eur)
+          "value": 100.0             # 紙鈔面額 (float)(單位: 元/dollar/pound/eur)
           "dateTime": "2025-04-10T13:58:01.023Z"    # 發生時間(紙鈔接收) (見下面格式說明)
         }
     
       Return data:
         {
           "status": "<status code>", # "0-OK" 表示成功
-                                     # "1-OVER LIMIT" 表示已經超過 CREDITS 上限, 無法接收更多.
+                                     # "1-OVER LIMIT" 表示已經超過 CREDITS 上限, 此筆入金無法接受. 不算是錯誤.
                                      # "2-OCCUPIED" 表示已被網頁玩家占用. 不算是錯誤. (reserved)
                                      # "6-BAD DATA/FORMAT", "7-OUT OF SERVICE", "9-OTHER ERROR"
           "action": "req-cashin",    # 請求名稱
           "currency": "USD",         # 幣別 (見下面格式說明) (僅供參考)
-          "value": 100.0,            # 紙鈔面額 (number)(單位: 元/dollar/pound/eur) (僅供參考)
+          "value": 100.0,            # 紙鈔面額 (float)(單位: 元/dollar/pound/eur) (僅供參考)
           "TXID": "733cce9b-f07f-4a1c-9fff-397b8e1b0dd5", # 交易紀錄代號 (見下面格式說明). 只有當 status=0 才視為有效資料, 否則此欄位內容應為 "0"
           "dateTime": "2025-04-10T13:58:02.791Z"    # pending 紀錄建立時間 (見下面格式說明)
         }
@@ -105,7 +111,7 @@ J-Type Slot API 文件 (J型老虎機)
         {
           "action": "end-cashin",    # 請求名稱
           "currency": "USD",         # 幣別 (見下面格式說明) (僅供參考)
-          "value": 100.0,            # 紙鈔面額 (number)(單位: 元/dollar/pound/eur) (僅供參考)
+          "value": 100.0,            # 紙鈔面額 (float)(單位: 元/dollar/pound/eur) (僅供參考)
           "TXID": "733cce9b-f07f-4a1c-9fff-397b8e1b0dd5",  # 交易紀錄代號 (見下面格式說明)
           "dateTime": "2024-04-10T13:58:04.105Z"    # 紙鈔進 cash box 時間 (見下面格式說明)
         }
@@ -113,11 +119,11 @@ J-Type Slot API 文件 (J型老虎機)
       Return data:
         {
           "status": "<status code>", # "0-OK" 表示成功.
-                                     # "1-NO RECORD" 表示無對應入金紀錄, 可視為邏輯錯誤, 應結束流程.
+                                     # "1-NO RECORD" 表示無對應入金紀錄, 可能是邏輯錯誤、也可能已經採用另外管道入金. 應結束流程.
                                      # "6-BAD DATA/FORMAT", "7-OUT OF SERVICE", "9-OTHER ERROR"
           "action": "end-cashin",    # 請求名稱
           "currency": "USD",         # 幣別 (見下面格式說明) (僅供參考). 只有當 status=0 才視為有效資料.
-          "value": 100.0,            # 紙鈔面額 (number)(單位: 元/dollar/pound/eur). (僅供參考)只有當 status=0 才視為有效資料.
+          "value": 100.0,            # 紙鈔面額 (float)(單位: 元/dollar/pound/eur). (僅供參考)只有當 status=0 才視為有效資料.
           "TXID": "733cce9b-f07f-4a1c-9fff-397b8e1b0dd5",  # 交易紀錄代號 (僅供參考)(見下面格式說明). 只有當 status=0 才視為有效資料.
           "dateTime": "2024-04-10T13:58:04.699Z"    # 事件/Complete 時間 (見下面格式說明)
         }
@@ -173,7 +179,7 @@ J-Type Slot API 文件 (J型老虎機)
         "end-cashout"(TX) -----> 
                                  將該筆出金 pending 紀錄關閉, 更新帳務.
                          <------ "RETURN"
-        (do nothing, or retry in case of error)
+        ([REFRESH], or retry in case of error)
         ================         ===========================
     (11) 有關逾時(數值暫定)與限制:
         - Slot 自發出 "req-cashout" 開始起算, 只要超過 15 sec 未收到對應 "RETURN", 直接結束程序.
@@ -189,7 +195,7 @@ J-Type Slot API 文件 (J型老虎機)
     (2) 當收到 "req-cashout", 中央一律為其建立一筆 "出金 pending 紀錄" (以下簡稱 PENDING), 並產生對應之交易序號 TX 與核可出金金額, 返回此交易序號與金額給 Slot.
         如果收到時已存在之前 PENDING, 必須先將舊 PENDING 失效 (註記為失效、或刪除).
     (3) 當收到 "end-cashout" 時若目前存在 PENDING 且 TX 相同, 將該 PENDING 確認並關閉 (completed), 並進行帳務更新.
-    (4) 當收到 "end-cashout" 時若目前並不存在 PENDING, 或雖存在但 TX 不相同, 則僅需 log 該 "end-cashout" 訊息(供偵錯)隨即丟棄並 "RETURN".
+    (4) 當收到 "end-cashout" 時若目前並不存在 PENDING, 或雖存在但 TX 不相同, 則僅需 log 該 "end-cashout" 訊息(供偵錯)隨即丟棄並 "RETURN" (1-NO RECORD).
         此情況不對資料庫進行任何狀態變更, 即之前存在的 PENDING 依然有效.
     (5) 同一時間某一帳號最多只會存在一筆有效 "出金 pending 紀錄".
     (6) 隨時允許透過其它管道(櫃檯網頁)對該機台帳號進行(人工)出金. 
@@ -215,7 +221,7 @@ J-Type Slot API 文件 (J型老虎機)
                                      # "6-BAD DATA/FORMAT", "7-OUT OF SERVICE", "9-OTHER ERROR"
           "action": "req-cashout",   # 請求名稱
           "currency": "USD",         # 幣別 (見下面格式說明). 只有當 status=0 才視為有效資料.
-          "value": 123.5,            # 核可出金金額 (number)(單位: 元/dollar/pound/eur) 只有當 status=0 才視為有效資料.
+          "value": 123.5,            # 核可出金金額 (float)(單位: 元/dollar/pound/eur) 只有當 status=0 才視為有效資料.
           "TXID": "673cae9b-f07f-4a2d-9fff-3a801aab33df", # 交易紀錄代號 (見下面格式說明). 只有當 status=0 才視為有效資料, 否則此欄位內容應為 "0"
           "dateTime": "2025-04-10T13:58:02.791Z"    # pending 紀錄建立時間 (見下面格式說明)
         }
@@ -228,7 +234,7 @@ J-Type Slot API 文件 (J型老虎機)
         {
           "action": "end-cashout",   # 請求名稱
           "currency": "USD",         # 幣別 (見下面格式說明)
-          "value": 123.5,            # 收據列印面額 (number)(單位: 元/dollar/pound/eur) (僅供參考)
+          "value": 123.5,            # 收據列印面額 (float)(單位: 元/dollar/pound/eur) (僅供參考)
           "TXID": "673cae9b-f07f-4a2d-9fff-3a801aab33df",  # 交易紀錄代號 (見下面格式說明)
           "dateTime": "2024-04-10T13:58:04.105Z"    # 收據成功印出時間 (見下面格式說明)
         }
@@ -236,11 +242,11 @@ J-Type Slot API 文件 (J型老虎機)
       Return data:
         {
           "status": "<status code>", # "0-OK" 表示成功.
-                                     # "1-NO RECORD" 表示無對應入金紀錄, 包括可能已經採用另外管道出金. 不算是錯誤.
+                                     # "1-NO RECORD" 表示無對應入金紀錄, 可能是邏輯錯誤、也可能已經採用另外管道出金. 應結束流程.
                                      # "6-BAD DATA/FORMAT", "7-OUT OF SERVICE", "9-OTHER ERROR"
           "action": "end-cashout",   # 請求名稱
           "currency": "USD",         # 幣別 (見下面格式說明) (僅供參考) 只有當 status=0 才視為有效資料.
-          "value": 123.5,            # 實際出金金額 (number)(單位: 元/dollar/pound/eur) (僅供參考). 只有當 status=0 才視為有效資料.
+          "value": 123.5,            # 實際出金金額 (float)(單位: 元/dollar/pound/eur) (僅供參考). 只有當 status=0 才視為有效資料.
           "TXID": "673cae9b-f07f-4a2d-9fff-3a801aab33df",  # 交易紀錄代號 (僅供參考) (見下面格式說明) (僅供參考).
           "dateTime": "2024-04-10T13:58:04.699Z"    # 事件/Complete 時間 (見下面格式說明)
         }

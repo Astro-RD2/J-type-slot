@@ -978,7 +978,7 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
     - 設定一維條碼對照文字顯示位置
       send: 1D 48 n
       n=0(none), 1(above), 2(below), 3(both)
-    - 內定輸出 ASCII 字型. 可切換至 utf32 (4-byte, big-endian)
+    - 可切換至輸出 utf32 字元 (4-byte, big-endian) (內定輸出 ASCII 字型)
       send: 1C 28
       recv: (none)
       範例:
@@ -989,6 +989,23 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
       a = '列印文字'.encode('utf-32')    # a 將為 binary 字串.
       ser.write(a)   將 utf32 字串輸出至印表機.
       --------------------------------------------------------------------
+    - 文字對齊選擇:
+      send: 1C 41 n
+      recv: (none)
+      n=0 靠左 (default)
+      n=1 靠右
+      n=2 置中
+    - 文字尺寸選擇
+      send: 1B 4D n
+      n= 0, 8x13 字型
+      n= 1, 16x24 字型 (default)
+      n= 2, 24x36 字型
+      n= 3, 32x48 字型
+      n= 4, 48x72 字型
+    - 粗體 開啟
+      send: 1C 45
+    - 粗體 關閉
+      send: 1C 46
   - 列印:
     - FormFeed: 告知一頁結束, 並進行全裁切.
       send: 0C
@@ -1180,5 +1197,44 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
 
   - 只顯示某 interface
     $ ip l sh enp3s0
+
+- 等待 Web page 是否載入
+  - 舉例: 找 refresh 物件
+    wait_obj = WebDriverWait(driver, 10)    # 10 秒. 此行只是定義物件, 並不等待.
+    ...
+    ts = time.time()    # 取得 timestamp (float)(second)
+    try:
+        找尋特定物件:
+        refresh_button = driver.find_element(By.CSS_SELECTOR, 'i.mdi-refresh.mdi.v-icon')
+
+        或找尋特定物件 with timeout
+        refresh_button = wait_obj.until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'i.mdi-refresh.mdi.v-icon.notranslate')))
+
+        print('take',time.time() - ts,'to load page')
+        # 印出按鈕資訊
+        print("Refresh button found:", refresh_button)
+        print("Button text:", refresh_button.text)
+        refresh_button.click()
+        print("refresh click")
+
+    except selenium.common.exceptions.TimeoutException:         # 超過設定時間依然未載入完成.
+    except selenium.common.exceptions.NoSuchElementException:   # 在載入完成的情況下找不到該元素.
+ 
+    except selenium.common.exceptions.WebDriverException as e:
+        print('take',time.time() - ts,'to load page')
+        print('web driver except:', e)
+    except Exception as e:
+        print('take',time.time() - ts,'to load page')
+        print('except:', e)
+  - 隱性等待設定. 一經設定後, 對所有 find_element() 自動生效.
+    driver.implicitly_wait(5)
+    ...
+    # 在 5 sec 內找到指定元素即點擊.
+    driver.find_element_by_xpath('//*[@id="s-top-loginbtn"]').click()
+  - 在 element 已經存在的情況下, find_element() 比 wait_obj.until() 效能高很多 (兩倍)
+
+- 連線
+ - ping -n -c 1 xxx.xxx.xxx.xxx
+ - 檢查 exit code (echo $?), 為 0 表示成功.
 
 <End of Document>
