@@ -30,7 +30,6 @@ Version 1.0 - 2025/4/24 自 J-type-slot-軟體系統需求與設計.txt 獨立�
   #!/usr/bin/env python
   #-*- coding:UTF-8 -*-
 
-
 VMware Image 版本控制
 ----------------------------------
 1. J-type-Slot-Dev-v1
@@ -66,19 +65,22 @@ VMware Image 版本控制
   鍵盤/英文: US
   時區: Canbodia (柬埔寨, Asia/Phnom Penh)     (未來考慮使用 UTC, 然後利用系統參數 offset +7)
   What apps do you like ....: 選擇 Default selection
-  勾選 Install third-party software for graphics and Wi-Fi hardware
   勾選 Download and install support for additional media formats
+  勾選 Install third-party software for graphics and Wi-Fi hardware
   Computer name: JTYPE-DEVCOM
   Username: guest
   Password: 12345678
+  不要選自動登入
   確認勾選 Require my password to log in
   第一次登入選 guest
     右下出現齒輪, 選擇 Ubuntu on Xorg, 使切換到使用 X11 而非內定的 Wayland
+  第一次登入, 會出現一對選項, 任何服務都不要選, 也不要回報錯誤/Report.
+  另外, 如果要求升級 OS 至 24.04.2 請拒絕. 因為會使 Python 升級到 Python 3.12, 有相容性問題. Onboard 只支援 3.10.
 
 (2) 使用 GDM3 登入, xfce4 桌面
   - 安裝
     https://linuxcapable.com/how-to-install-xfce-on-ubuntu-linux/
-    $ apt install xfce4 xfce4-googies
+    $ apt install xfce4 xfce4-goodies
     $ reboot
   - Select 'xfce' on login UI
     登出, 選擇某帳號. 接下來會出現齒輪, 裡面可選擇 xfce4
@@ -86,9 +88,14 @@ VMware Image 版本控制
     $ xfce4-power-manager
     When power bottom is pressed -> Shutdown
     System power saving => When inactive for -> Never
-    Display power management => (disabled)
-    Blank after => Never
+    Display power management => (Enable)       <-- 曾嘗試使用 Disable, 但發現無效.
+    Blank after => Never    <-- 無論 Display power management 設定為何, 此都要設定為 Never
+    Put to sleep after => Never
+    Switch off after => Never
     Automatically lock the session -> Never
+  - 關閉 screen saver 與螢幕鎖定
+    $ xfce4-screensaver-preferences
+    關閉 screen saver 與 Enable Lock screen -> 關閉.
   - 將 WorkSpaces 縮減到 1 個 (內定為 4 個, 太多了):
     Applications => Settings => Workspaces
 
@@ -109,9 +116,11 @@ VMware Image 版本控制
     # 確認可以自命令列執行瀏覽器 (browser).
     $ firefox -kiosk -private-window "https://www.google.com"   可以成功全畫面、隱私分頁. (按下 Alt-F4 關閉應用程式)
   - 設定瀏覽器 (於瀏覽器之 Setting 內)
+    General => Browsing => Recommend extensions as you browse => Unchecked
     General => Browsing => Recommend features as you browse => Unchecked
     Home => New Windows and Tabls => Homepage and new windows => Blank Page
     Home => New Windows and Tabls => New tabs => Blank Page
+    Uncheck search suggestion
     Privacy & Security => Passwords => Ask to save passwords => Unchecked
     Privacy & Security => Firefox Data Collection and Use => Unchecked total
   
@@ -137,11 +146,11 @@ VMware Image 版本控制
 
 (9) 使 Python 易用
   $ apt install python3-pip
-  $ apt install python-is-python3    <-- 不要此. 因為 virtual environment 會自動產生 'python' 至對應 python 版本
-  $ apt install python3-venv
+  $ apt install python-is-python3   <-- for 實體開發機或是 embedded 需要此
+  $ apt install python3-venv        <-- for 實體開發機或是 embedded "不"需要此.
 
 (10) 安裝需要的 utility
-  $ sudo apt install yad
+  $ sudo apt install yad   # 不需要此.
   $ apt install vim      # 需要安裝此. 避免 arrow 出問題.
   $ echo ':color desert' >> /etc/vim/vimrc.local    # 使顏色較明顯. (否則 python 註解會非常暗)
 
@@ -178,12 +187,23 @@ VMware Image 版本控制
   $ systemctl --system start pulseaudio
   $ sudo adduser root pulse-access
   重開機, 應該搞定.
+  重新安裝, 發現 PulseAudio 已經被啟動. 但不知道為何還是沒有聲音.
+  所以嘗試 sudo adduser root pulse-access
+  sudo apt install ffmpeg
 
 (12) 關掉 Wayland, 使用 X 
-  $ sudo vi /etc/gdm3/custom.conf
+  - $ sudo vi /etc/gdm3/custom.conf
     ------------------------------------------
+    [daemon]
+    ...
     WaylandEnable = false
     ------------------------------------------
+    $ sudo systemctl restart gdm3
+  - Check your session type with echo "$XDG_SESSION_TYPE"
+    $ echo $XDG_SESSION_TYPE
+    X11
+    -------
+    On the desktop: Ubuntu Settings --> System --> About --> Windowing System should:'X11'
 
 (13) 相關桌面設定 (Ubuntu Setting)
   - Accessibility=>Typing=>Repeat Keys ^
@@ -203,6 +223,22 @@ VMware Image 版本控制
   $ pip install cryptocode
   $ pip install pynput
   $ pip install keyboard
+  $ pip install pyserial
+  $ pip install ewmh
+  $ pip install urllib ?
+  $ pip install python-xlib ?
+
+(15). Mount 至 Win11
+  - 於 Windows
+    - 專案目錄 J-type-slot 開啟共用, 需選擇 Everyone, 且開啟可讀寫.
+    - 至設定 => 網路和網際網路 => 所有網路 
+      公用資料夾共用 -> 開啟
+      以密碼保護的共用 -> 關閉
+  - 於 Linux 步驟:
+    $ apt install cifs-utils
+    $ mkdir /mnt/J-type-slot
+    $ mount.cifs -o vers=2.0,user=root,password= "//172.16.3.230/J-type-slot" /mnt/J-type-slot
+
 
 
 ============================================================
@@ -270,7 +306,71 @@ VMware Image 版本控制
     $ cp /root/.config/monitors.xml /var/lib/gdm3/.config/
     $ chown gdm:gdm /var/lib/gdm3/.config/monitors.xml
     $ restart or $ systemctl restart gdm3
+  - 如果 Touch 不正確.
+    接 4K 螢幕 HDMI, 於設定中將解析度設定成 1920x1080
+    $ xrandr -o right
+    xinput set-prop "Weida Hi-Tech CoolTouch® System" --type=float "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1  
+    xinput set-prop 11 --type=float "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1  
 
+    (其他旋轉)
+    $ xrandr -o left
+    xinput set-prop "Weida Hi-Tech CoolTouch® System" --type=float "Coordinate Transformation Matrix" 0 -1 1 1 0 0 0 0 1
+    或使用 ID
+    xinput set-prop 11 --type=float "Coordinate Transformation Matrix" 0 -1 1 1 0 0 0 0 1
+
+  - 設定方式:    
+    xrandr -o right
+    # 獲得 touch ID
+    TOUCH_ID=$(xinput -list | grep -i touch | awk -F'id=' '{print $2}' | awk '{print $1}')
+    if [ -n "$TOUCH_ID" ]; then
+       xinput set-prop ${TOUCH_ID} --type=float "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1  
+
+  - 使 touch 可以捲動 firefox 內容 (內定不行)
+    /etc/security/pam_env.conf and add MOZ_USE_XINPUT2 DEFAULT=1
+    或
+    $ export MOZ_USE_XINPUT2=1
+    $ python test_main.py
+
+  - 避免 tear 撕裂現象:  (確實效果顯著)
+    增加檔案 /etc/X11/xorg.conf.d/20-intel.conf, 內容如下:
+    Section "Device"
+        Identifier  "Intel Graphics"
+        Driver      "intel"
+        Option      "TearFree" "true"
+    EndSection
+
+  
+- 建立 /etc/profile.d/astro.sh 如下:
+    -----------------------------------------------------
+    OUTPUT_DEV=$(/usr/bin/xrandr -q | grep ' connected '| head -1)
+      
+    if [ -n "$OUTPUT_DEV" ]; then
+        # If needed, adjust resolution ...
+        if ! echo "$OUTPUT_DEV" | grep -qE ' connected (1080x1920|1920x1080)'; then
+            OUTPUT_DEV=$(echo "$OUTPUT_DEV" | awk '{print $1}')
+            xrandr -d :0 --output "$OUTPUT_DEV" --mode 1920x1080
+        fi
+        # Adjust monitor content
+        /usr/bin/xrandr -o right
+      
+        # Adjust touch panel (rotate right)
+        TOUCH_ID=$(/usr/bin/xinput -list | grep -i touch | awk -F'id=' '{print $2}' | awk '{print $1}')
+        echo Touch ID=$TOUCH_ID
+
+        if [ -n "$TOUCH_ID" ]; then
+            /usr/bin/xinput set-prop "${TOUCH_ID}" --type=float "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1
+        fi
+    fi
+    -----------------------------------------------------
+
+- /root/astro/start.sh
+  -----------------------------------------------------
+  
+  -----------------------------------------------------
+
+- 確認送電即自動開機
+  (DEL) BIOS => Advanced => IT8786 Super IO Configuration 
+             => Restore AC Power Loss by IO 請確認為 [Power On]
 
 ============================================================
 4. 程式技術使用
@@ -503,15 +603,7 @@ VMware Image 版本控制
       - 設定一維條碼對照文字顯示位置
         send: 1D 48 n
         n=0(none), 1(above), 2(below), 3(both)
-      - 設定字型大小
-        send: 1B 4D n
-          n=0 8x13 字型
-          n=1 16x24 字型
-          n=2 24x36 字型
-          n=3 32x48 字型
-          n=4 48x72 字型
-        recv: (none)
-      - 內定輸出 ASCII 字型. 可切換至 utf32 (4-byte, big-endian)
+      - 內定輸出 ASCII 字型. 可切換至 utf32 (4-byte, big-endian) (內定輸出 ASCII 字型)
         send: 1C 28
         recv: (none)
         範例:
@@ -522,6 +614,24 @@ VMware Image 版本控制
         a = '列印文字'.encode('utf-32')    # a 將為 binary 字串.
         ser.write(a)   將 utf32 字串輸出至印表機.
         --------------------------------------------------------------------
+      - 文字對齊選擇:
+        send: 1C 41 n
+        n=0 靠左 (default)
+        n=1 靠右
+        n=2 置中
+        recv: (none)
+      - 設定字型大小
+        send: 1B 4D n
+          n=0 8x13 字型
+          n=1 16x24 字型 (default)
+          n=2 24x36 字型
+          n=3 32x48 字型
+          n=4 48x72 字型
+        recv: (none)
+      - 粗體 開啟
+        send: 1C 45
+      - 粗體 關閉
+        send: 1C 46
     - 列印
       - FormFeed: 告知一頁結束, 並進行全裁切.
         send: 0C
@@ -534,13 +644,25 @@ VMware Image 版本控制
     經過觀察, 已經設定 ulimit -c 0, 表示 coredump 檔案大小上限為 0
 
 - 懸浮鍵盤
-  - 安裝 onboard
+  - 安裝 onboard  (必須在 Python 3.10 下)
     https://askubuntu.com/questions/1426352/how-to-get-on-screen-keyboard-osk-to-work-like-a-mobile-device
     $ sudo apt install onboard
     (安裝過程會出現 error, 但依然可安裝與執行.)
+  - 修正檔案  vi /usr/lib/python3/dist-packages/Onboard/LayoutLoaderSVG.py
+    Line 447, 加上 %
   - 然後設定:
     $ onboard-setting
     在 Layout 內選擇 Grid (選擇其它的要不然太複雜, 要不然會有 bug)(Grid 雖無 bug, 但範圍很小)
+
+- 請使用 subprocess.run() 來啟動外部程式, 不要使用 os.system()
+  依據實測, os.system() 有時候會發生非預期 block
+
+
+================================================================
+TODO
+================================================================
+- 透過另外一個 thread 來點選 refresh icon
+- 
 
 
 ================================================================
@@ -914,7 +1036,6 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
     print('end.')
     --------------------------------------------------------------------
 
-
 - ICT 印表機測試:
   - 透過 console 的 echo -e 命令, 結果 no work
     Reset: 1B 72 01
@@ -928,91 +1049,7 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
     echo -e -n 'Hello World\n\f' > /dev/ttyACM0
     echo -e -n '\x1D\x61' > /dev/ttyACM0
   - 改透過 pyserial 才成功. 
-  - 以下為 ICT SP1 各命令整理.
-  - 初始化 (每當斷線重連, 進行一次即可):
-    - 印表機恢復初始設定: 無底線、取消反白、單倍寬、單倍高、16x24 字型、ASCII
-      編碼模式、字元靠左對齊、一維條碼位置重置、一維條碼高 140 點
-      send: 1B 40
-      recv: (none)
-      (快)
-    - Reset: 使機器回到 idle 狀態 (不會更改設定)
-      send: 1B 72 01
-      recv: (none)  
-      之後應下達 'ESC #'
-    - 切換成使用 ESC/POS protocol
-      send: 1B 23  (ESC #)
-      recv: 1B 23  (ESC #)  <-- 如果成功的話.
-  - 狀態:
-    - 獲得印表機資訊:  (失敗, 而且干擾列印)
-      send: 1B 28 54
-      recv: firmware_version CHAR(20),
-            checksum BYTE(2), 先 low, 然後 high byte
-            pull_prev BYTE(1) 0=無防拉, 1=防拉
-    - 印表機是否支援半裁:  (失敗, 而且干擾列印)
-      send: 1B 28 59
-      recv: 0=有支援, 1=無支援.
-    - 讀取印表機狀態:   (成功)
-      印表機在 idle 狀態下才有效.
-      send: 1D 61
-      recv: two bytes data
-        bit0=1 cover open or no paper on thermal head
-        bit1=1 roller paper empty
-        bit2=1 cutter malfunction
-        bit3=1 anti-pulling sensor masked  (只適用於有防拉機型)
-        bit4=1 check-sum error
-        bit5=1 no SD card ready
-        bit6=1 abnormal temperature
-        bit7=1 SD file error
-        --- hight byte below
-        bit8=1 roller paper low level warning
-        bit9=1 out paper sensor mask  (for model NNX only)
-        bit10=1 paper jam
-        (all others reserved)
-      此狀態讀取很慢, 與前後指定最好間隔 1 sec. 且如果下達時機器正在列印或非 idle, 有可能完全不回應.
-  - 設定:
-    - 設定 1D barcode 細線與粗線寬度
-      send: 1B 77 m n
-      recv: (none)
-      m=1~10 (細線寬度, default 2)
-      n=2~5  (粗線/細線寬度比, default 2)
-    - 設定一維條碼對照文字顯示位置
-      send: 1D 48 n
-      n=0(none), 1(above), 2(below), 3(both)
-    - 可切換至輸出 utf32 字元 (4-byte, big-endian) (內定輸出 ASCII 字型)
-      send: 1C 28
-      recv: (none)
-      範例:
-      --------------------------------------------------------------------
-      #-*- coding:UTF-8 -*-
-      ...
-      ser.write(b'\x1c\x28')
-      a = '列印文字'.encode('utf-32')    # a 將為 binary 字串.
-      ser.write(a)   將 utf32 字串輸出至印表機.
-      --------------------------------------------------------------------
-    - 文字對齊選擇:
-      send: 1C 41 n
-      recv: (none)
-      n=0 靠左 (default)
-      n=1 靠右
-      n=2 置中
-    - 文字尺寸選擇
-      send: 1B 4D n
-      n= 0, 8x13 字型
-      n= 1, 16x24 字型 (default)
-      n= 2, 24x36 字型
-      n= 3, 32x48 字型
-      n= 4, 48x72 字型
-    - 粗體 開啟
-      send: 1C 45
-    - 粗體 關閉
-      send: 1C 46
-  - 列印:
-    - FormFeed: 告知一頁結束, 並進行全裁切.
-      send: 0C
-      recv: (none)
-    - Carriage Return: 告知一頁結束, 並進行半裁切. (只適用於無防拉機型)
-      send: 0D
-      recv: (none)
+  - 以下為 ICT SP1 各命令整理. 已經搬移到上面.
 
 - AstroKernel hook keyboard
   - Keylogger
@@ -1066,6 +1103,8 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
     https://discourse.ubuntu.com/t/how-to-switch-from-x11-to-wayland-on-live-ubuntu-24-04-1/52917
   - $ sudo vi /etc/gdm3/custom.conf
     ------------------------------------------
+    [daemon]
+    ...
     WaylandEnable = false      <-- active this line
     ------------------------------------------
     $ sudo systemctl restart gdm3
@@ -1083,7 +1122,7 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
   - 插入 ICT SP1 printer USB, 會顯示如下裝置 /dev/ttyACM0:
     echo -e -n '\x1B\xF0' > /dev/ttyACM0
 
-- 建立 Python 虛擬環境 base 方式
+- (對於實體開發機或 Embedded 不需要了. 自己的開發環境才要) 建立 Python 虛擬環境 base 方式
   $ mkdir /root/py-venv/
   $ python -m venv /root/py-venv/base
   $ source /root/py-venv/base/bin/activate   <-- 啟動虛擬環境. (可放在開機批次檔)

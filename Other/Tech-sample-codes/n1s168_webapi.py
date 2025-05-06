@@ -27,8 +27,7 @@ class n1s168_webapi:
         self.__co_b_req_idle = threading.Event()
         self.reset_all()
 
-    def reset_all(self):
-        # for cashin
+    def join_all(self):
         if self.__ci_thr is not None:
             try:
                 self.__ci_thr.join()
@@ -36,7 +35,17 @@ class n1s168_webapi:
                 print('join thread fail!')
                 pass
             self.__ci_thr = None
+        if self.__co_thr is not None:
+            try:
+                self.__co_thr.join()
+            except:
+                print('join thread fail!')
+                pass
+            self.__co_thr = None
 
+    def reset_all(self):
+        self.join_all()
+        # for cashin
         self.ci_event.clear()               # monitor this event right after call req_cachin()
                                             # DOWN when request, UP when webapi finished, DOWN when result was got
         self.__ci_b_req_idle.set()          # DOWN when request, UP when webapi finished
@@ -46,13 +55,6 @@ class n1s168_webapi:
         self.__ci_json_data = None          # json data from API server
 
         # for cashout
-        if self.__co_thr is not None:
-            try:
-                self.__co_thr.join()
-            except:
-                print('join thread fail!')
-                pass
-            self.__co_thr = None
         self.co_event.clear()               # monitor this event right after call req_cachin()
         self.__co_b_req_idle.set()          # DOWN when request, UP when webapi finished
         #--
@@ -276,6 +278,8 @@ class n1s168_webapi:
             self.__ci_TXID = self.__ci_json_data['TXID']
 
         json_data = self.__ci_json_data
+        if type(json_data['value']) is str:
+            json_data['value'] = float(json_data['value'])
         self.__ci_json_data = None
         self.ci_event.clear()
         return json_data
@@ -412,6 +416,8 @@ class n1s168_webapi:
         
         self.__ci_TXID = ''
         json_data = self.__ci_json_data
+        if type(json_data['value']) is str:
+            json_data['value'] = float(json_data['value'])
         self.__ci_json_data = None
         self.ci_event.clear()
         return json_data
@@ -518,7 +524,7 @@ class n1s168_webapi:
     #   "http_status_code": int - the status code returned from HTTP server. for reference only
     #   ## the below is valid only if result_code==0
     #   "status": str - "0-OK" 表示成功, 
-    #                   "1-OVER LIMIT" 表示已經超過 CREDITS 上限, 此筆入金無法接受. 不算是錯誤.
+    #                   "1-NO CREDITS" 表示沒有餘額/核可金額為 0 無法出金. 不算是錯誤.
     #                   "2-OCCUPIED" 表示已被網頁玩家占用. 不算是錯誤. (reserved)
     #                   "6-BAD DATA/FORMAT", 
     #                   "7-OUT OF SERVICE", 
@@ -552,6 +558,7 @@ class n1s168_webapi:
         if self.__co_json_data['result_code'] == 0 and self.__co_json_data['status'][0] == '0':
             if type(self.__co_json_data['value']) is str:
                 self.__co_value = float(self.__co_json_data['value'])
+                self.__co_json_data['value'] = self.__co_value
             else:
                 self.__co_value = self.__co_json_data['value']
             self.__co_TXID = self.__co_json_data['TXID']
@@ -583,7 +590,7 @@ class n1s168_webapi:
 
         if len(self.__token) == 0:
             return -1
-        print('end_cashout:', type(self.__co_value))
+        #print('end_cashout:', type(self.__co_value))
         if self.__co_TXID == '' or self.__co_value < 0.00000001:
             return -4
 
@@ -695,6 +702,8 @@ class n1s168_webapi:
         self.__co_TXID = ''
         self.__co_value = 0.0
         json_data = self.__co_json_data
+        if type(json_data['value']) is str:
+            json_data['value'] = float(json_data['value'])
         self.__co_json_data = None
         self.co_event.clear()
         return json_data
@@ -824,7 +833,7 @@ if __name__ == '__main__':
                     print(".")
                 print(json_data)    # for debug
                 if json_data['result_code'] == 0:
-                    print('0=got result (http status ', json_data['http_status_code'],')',sep='')
+                    print('0=got result (http status ', json_data['http_status_code'],')(status ',json_data['status'],')',sep='')
                 elif json_data['result_code'] == -1:
                     print('-1=API request error')
                 elif json_data['result_code'] == -2:
@@ -873,7 +882,7 @@ if __name__ == '__main__':
                     print(".")
                 print(json_data)    # for debug
                 if json_data['result_code'] == 0:
-                    print('0=got result (http status ', json_data['http_status_code'],')',sep='')
+                    print('0=got result (http status ', json_data['http_status_code'],')(status ',json_data['status'],')',sep='')
                 elif json_data['result_code'] == -3:
                     print('-3=no prior request')
                 elif json_data['result_code'] == -4:
@@ -912,7 +921,7 @@ if __name__ == '__main__':
                     print(".")
                 print(json_data)    # for debug
                 if json_data['result_code'] == 0:
-                    print('0=got result (http status ', json_data['http_status_code'],')',sep='')
+                    print('0=got result (http status ', json_data['http_status_code'],')(status ',json_data['status'],')',sep='')
                 elif json_data['result_code'] == -1:
                     print('-1=API request error')
                 elif json_data['result_code'] == -2:
@@ -961,7 +970,7 @@ if __name__ == '__main__':
                     print(".")
                 print(json_data)    # for debug
                 if json_data['result_code'] == 0:
-                    print('0=got result (http status ', json_data['http_status_code'],')',sep='')
+                    print('0=got result (http status ', json_data['http_status_code'],')(status ',json_data['status'],')',sep='')
                 elif json_data['result_code'] == -3:
                     print('-3=no prior request')
                 elif json_data['result_code'] == -4:
