@@ -1,4 +1,9 @@
 numpy
 requests
 Flask
+render_template
+redirect
+url_for
+jsonify 
+json
 cryptocode

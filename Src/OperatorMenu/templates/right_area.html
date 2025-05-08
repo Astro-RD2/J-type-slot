@@ -1,0 +1,99 @@
+<form class="form-container" id="form1" method="POST" action="/data/NETWORK">
+    <h2>Network setting</h2>
+    <label><input type="radio" name="BOOTPROT" id="dhcp" value="dhcp"> Dynamic/DHCP</label><br>
+    <label><input type="radio" name="BOOTPROT" id="static" value="static"> static</label><br>
+        <div id="staticfield"> 
+            <label for="IPADDR_f1" >IP address:</label>
+            <input type="text" id="IPADDR_f1" name="IPADDR_f1" placeholder="Enter IP here" >
+            <label for="NETMASK_f1">Netmask:</label>
+            <input type="text" id="NETMASK_f1" name="NETMASK_f1" placeholder="Enter Netmask here"><br>
+            <label for="GATEWAY_f1">Gateway:</label>
+            <input type="text" id="GATEWAY_f1" name="GATEWAY_f1" placeholder="Enter Gateway here"><br><br>
+        </div>
+    <button type="submit" value="netWork">Apply</button>
+    </form>
+
+    <form  class="form-container" id="form2"  method="POST" action="/data/BASIC">
+        <h2>Basic data setting</h2>
+        <p>The title or shop name which will be printed on receipt.</p>
+        <label for="TITLE_f2">Title/Shop name: </label>
+        <input type="text" id="TITLE_f2" name="TITLE_f2" placeholder="Enter title/shop name here"><br>
+        <p>The custom remark/reminder showed on the display when entering operator menu.</p>
+        <label for="REMARK_f2">Remark: </label>
+        <input type="text" id="REMARK_f2" name="REMARK_f2" placeholder="Enter remark here"><br><br>
+        <label for="TIME_ZONE">Time Zone: </label>
+        <select name="TIME_ZONE" id="TIME_ZONE">
+            <!-- TIME_ZONE_LIST -->
+        </select><br>
+        <label for="TIME_FORMAT">Time format: </label>
+        <select name="TIME_FORMAT" id="TIME_FORMAT">
+            <!-- TIME_FORMAT_LIST -->
+        </select><br><br>
+        <label for="CURRENCY_SYMBOL">Currency symbol: </label>
+        <select name="CURRENCY_SYMBOL" id="CURRENCY_SYMBOL">
+            <!-- CURRENCY_SYMBOL_LIST -->
+        </select>
+        <label for="CURRENCY_SYMBOL_PRINT_SIDE">, printed on the </label>
+        <label><input type="radio" name="CURRENCY_SYMBOL_PRINT_SIDE" id="right" value="right">right</label>                          
+        <label><input type="radio" name="CURRENCY_SYMBOL_PRINT_SIDE" id="left" value="left">left</label>
+        <label for="CURRENCY_SYMBOL"> side of the money</label><br>
+        <label for="THOUSAND_SEPARATOR">Thousand separator: </label>
+        <label><input type="radio" name="THOUSAND_SEPARATOR" id="comma" value=","> , </label>                          
+        <label><input type="radio" name="THOUSAND_SEPARATOR" id="dot" value="."> . </label>                         
+        <label><input type="radio" name="THOUSAND_SEPARATOR" id="space" value=" "> None </label>
+        <p>The URL of home page of game portal.</p>
+        <label for="HOME_URL">Home URL: </label>
+        <select name="HOME_URL" id="HOME_URL">
+            <!-- HOME_URL_LIST -->
+        </select><br>
+        <label for="apientry">API Entry: </label>
+        <input type="text" id="apientry" name="apientry" placeholder="Enter API entry here"><br><br>
+        <p>The unique ID for this slot machine (optional)</p>
+        <label for="ASSET_f2">Asset: </label>
+        <input type="text" id="ASSET_f2" name="ASSET_f2" placeholder="Enter Asset here"><br><br>
+        <button type="submit" value="basicData">Apply</button>
+    </form>
+                
+    <form  class="form-container" id="form3" method="POST" action="/data/REGISTER">
+        <h2>Register</h2>
+        <label for="ACCOUNT_f3">Account: </label>
+        <input type="text" id="ACCOUNT_f3" name="ACCOUNT_f3" placeholder="Enter Account here"><br>                        
+        <label for="pwd">Password: </label>
+        <input type="password" id="pwd" name="pwd" placeholder="Enter Password here"><br>
+        <button type="submit" name="submit_button" value="get">[Get token]</button> 
+        <button type="submit" name="submit_button" value="drop">[Drop token]</button><br><br>       
+        <label for="TOKEN_f3">Token: </label>
+        <input type="text" id="TOKEN_f3" name="TOKEN_f3"><br><br>
+        <button  onclick="test_login()">[ Login test ]</button>
+    </form>
+
+    <form class="form-container" id="form4">
+        <h2>Bill acceptor test</h2>
+        <div class="item3" id="bamodel">Model name: </div>
+        <div class="item3" id="bafirmware">Firmware: </div>
+        <div class="item3" id="bacrc">CRC: </div>
+        <div id="currency">Currency: </div>
+        <div id="bastatus">Status: </div>
+        <div id="last_input">Last input: </div><br>
+        
+        <button  onclick="test_bill(0)">[ Return bill ]</button> 
+        <button  onclick="test_bill(1)">[ Stack bill ]</button><br><br>
+        <p>Note! All input here will NOT be counted into accounting.</p>
+    </form>
+
+    <form class="form-container" id="form5" >
+        <h2>Receipt printer test</h2>
+        <div class="item4" id="PRINTER_NAME">Model name: </div>
+        <div class="item4" id="rpdriver">Driver: </div>
+        <div class="item4" id="rpfirmware">Firmware: </div>
+        <div class="item4" id="rpcrc">CRC: </div>
+        <div id="rpstatus">Status: </div>
+        <button  onclick="test_receipt()">[ Print test receipt ]</button><br><br>
+    </form>
+
+    <form class="form-container" id="form6">
+        <h2>Reset</h2>
+        <label for="phone">Phone:</label>
+        <input type="tel" id="phone" name="phone"><br><br>
+        <input type="submit" value="Submit Form 6">
+    </form> 

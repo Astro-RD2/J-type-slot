@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html  lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../static/jquery-3.6.0.min.js"></script>
+    <title>Operation Menu</title>
+    <style>
+        body, html {
+            height: 120vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        container {
+            background-color: #f0f0f0;
+            padding: 20px;
+            height: 95vh;
+            text-align: center;   
+        }
+
+        .top {
+            display: flex;
+            height: 25vh;
+            flex-wrap: wrap;
+            gap: 0; 
+        }
+
+        .main {
+        flex: 1;
+        height: 70vh;
+        display: flex;
+        }
+
+        .left {
+            flex: 1; /* if 1, 1: Equal width for left and right areas */
+            background-color: #2a9d8f;
+            padding: 20px;
+        }
+
+        .right {
+            flex: 4; /* if 1, 1: Equal width for left and right areas */
+            background-color: #e76f51;
+            padding: 20px;
+        }
+            
+        .item {
+            flex-basis: calc(32.5% - 0.1px); /* Three items per row */
+            background-color: #f0f0f0;
+            padding: 5px;
+            height: 4vh;
+            text-align: left;
+            /* border: 1px solid #ccc;*/
+        }
+
+        .item2 {
+            flex-basis: calc(99%); /* one items per row */
+            background-color: #f0f0f0;
+            padding: 5px;
+            height: 4vh;
+            text-align: left;
+            /* border: 1px solid #ccc;*/
+        }
+
+        .item3 {
+            display: inline-flex;
+            padding-right: 20px;
+        }
+
+        .item4 {
+            display: inline-flex;
+            padding-right: 15px;
+        }
+
+        button {
+            background-color: #2a9d8f;
+            padding: 5px 10px;
+            font-size: 18px;
+            color: black;
+            border: none;
+            cursor: pointer;
+        }
+        .form-container {
+            display: none; /* Hide all forms by default */
+            margin-top: 20px;
+        }
+        .hidden {
+            padding-top: 5px;
+            margin-top: 2px;
+            margin-left: 30px;
+            font-size: 15px;
+        }       
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <div class="top">
+            <div class="item" id="KERNEL_VER_h">Kernel_ver: </div>
+            <div class="item" id="IPADDR_h">IP: </div>
+            <div class="item" id="CURRENT_DT_h">Current date/time: </div>
+            <div class="item2" id="HOME_URL_h">HOME URL: </div>      
+            <div class="item" id="TITLE_h">Title: </div>
+            <div class="item" id="ASSET_h">Asset: </div>
+            <div class="item" id="ACCOUNT_h">Account: </div>            
+            <div class="item2" id="TOKEN_h">Token state: </div>
+            <div class="item2" id="REMARK_h">Note: </div>
+    </div>
+
+    <div class="main">
+        <div class="left">
+            <ul id="menuList" role="menu" aria-labelledby="menuBtn">
+                <li role="none"><button  onclick="showForm('form1')">Network setting</button></li>            
+                <li role="none"><button  onclick="showForm('form2')">Basic data setting</button></li>
+                <li role="none"><button  onclick="showForm('form3')">Register</button></li>
+                <li role="none"><button  onclick="showForm('form4')">Bill acceptor test</button></li>
+                <li role="none"><button  onclick="showForm('form5')">Receipt printer test</button></li>
+                <li role="none"><button  onclick="showForm('form6')">Reset</button></li>
+            </ul>
+        </div>
+        <div class="right" id="rightarea">
+            <!-- Forms -->                     
+            {% include "right_area.html" %}                     
+        </div>
+    </div>
+</div>
+    <script>
+    $(function() {
+        // BASIC    
+        const kernel_ver = document.getElementById('KERNEL_VER_h');       
+        const title = document.getElementById('TITLE_h');
+        const remark = document.getElementById('REMARK_h');
+        const timezone_list = document.getElementById('TIME_ZONE_LIST'); 
+        const timezone = document.getElementById('TIME_ZONE');
+        const timeformat_list = document.getElementById('TIME_FORMAT_LIST'); 
+        const timeformat = document.getElementById('TIME_FORMAT');
+        const currency_symbole_list = document.getElementById('CURRENCY_SYMBOL_LIST'); 
+        const currency_symbole = document.getElementById('CURRENCY_SYMBOL');  
+        const currency_symbole_print_side = document.getElementById('CURRENCY_SYMBOL_PRINT_SIDE');
+        //const thousand_separator_list = document.getElementById('THOUSAND_SEPARATOR_LIST');
+        const thousand_separator = document.getElementById('THOUSAND_SEPARATOR');            
+        const home_url = document.getElementById('HOME_URL_h');
+        const home_url1 = document.getElementById('HOME_URL1');
+        const home_url2 = document.getElementById('HOME_URL2');
+        const asset = document.getElementById('ASSET_h');
+
+        // NETWORK
+        const bootprot = document.getElementById('BOOTPROT')
+        const ipaddr = document.getElementById('IPADDR_h'); 
+        const netmask = document.getElementById('NETMASK'); 
+        const gateway = document.getElementById('GATEWAY'); 
+
+        // REGISTER
+        const account = document.getElementById('ACCOUNT_h');
+        const token = document.getElementById('TOKEN_h');
+        const token_last_ts = document.getElementById('TOKEN_LAST_TS');
+
+        // DEVICE
+        // const  BILL_ACCEPTOR_PORT
+        const printer_name = document.getElementById('PRINTER_NAME');
+
+        const current_dt = document.getElementById('CURRENT_DT_h'); 
+        const now = new Date();
+        // numeric: did not pad 0, 2-digit: padding 0
+        const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+        const formattedDate = now.toLocaleDateString('fr-FR', options);
+        const formattedTime = now.toLocaleTimeString('fr-FR', { hour12: false });
+
+            $.ajax({
+                url: '/data/message',
+                data: {},
+                dataType: "json",
+                type: 'GET',
+                success: function(data) {                         
+                    //kernel_ver.textContent =  "Kernel ver: " + data.appInfo.id;
+                    const new_data = JSON.parse(data);
+                    
+                    for (const [key, value] of Object.entries(new_data)) {                            
+                        // BASIC
+                        if (key == "TITLE") {
+                        var edtitle=value || '';
+                        } else if (key == "REMARK") {                                
+                        var edremark=value || '';
+                        } else if (key == "TIME_ZONE_LIST") {
+                            var edtime_zone_list=value || '';
+                        } else if (key=="TIME_ZONE") {
+                            var edtime_zone=value || '';
+                        } else if (key == "TIME_FORMAT_LIST") {                                
+                        var edtime_format_list=value || '';
+                        }else if (key == "TIME_FORMAT") {                                
+                        var edtime_format=value || '';
+                        } else if (key == "CURRENCY_SYMBOL_LIST") {
+                            var edcurrency_symbol_list=value || ''
+                        } else if (key=="CURRENCY_SYMBOL") {
+                            var edcurrency_symbol=value || '';
+                        } else if (key == "CURRENCY_SYMBOL_PRINT_SIDE") {                                
+                        var edcurrency_symbol_print_side=value  || '';
+                        } else if (key == "THOUSAND_SEPARATOR") {
+                            var edthousand_separator=value  || '';
+                        } else if (key=="HOME_URL") {
+                            var edhome_url=value  || '';
+                        } else if (key=="HOME_URL1") {
+                            var edhome_url1=value  || '';
+                        } else if (key=="HOME_URL2") {
+                            var edhome_url2=value  || '';
+                        } else if (key=="ASSET") {
+                            var edasset=value || '';
+                        } 
+                        // NETWORK
+                        else if (key=="BOOTPROT") {
+                            var edbootprot=value || '';
+                        } else if (key=="IPADDR") {
+                            var edipaddr=value || '';
+                        } else if (key=="NETMASK") {
+                            var ednetmask=value || '';
+                        } else if (key=="GATEWAY") {
+                            var edgateway=value || '';
+                        }
+                        // REGISTER
+                        else if (key=="ACCOUNT") {
+                            var edaccount=value || '';
+                        } else if (key=="TOKEN") {
+                            var edtoken=value || '';
+                        } else if (key=="TOKEN_LAST_TS") {
+                            var edtoken_last_ts=value || '';
+                        } 
+                        // DEVICE
+                        else if (key=="BILL_ACCEPTOR_PORT") {
+                            var edbill_acceptor_port=value || '';
+                        }
+                    }
+                    // header:
+                    kernel_ver.textContent +=  "NO INFO";
+                    ipaddr.textContent += edipaddr;           
+                    current_dt.textContent += " " + formattedDate + " " + formattedTime;              
+                    home_url.textContent += edhome_url;                        
+                    title.textContent += edtitle;
+                    asset.textContent += edasset;
+                    account.textContent += edaccount;
+                    token.textContent += edtoken;
+                    remark.textContent += edremark;
+
+                    // display form:
+                    // form1:                        
+                    setRadioFromIni("BOOTPROT", edbootprot);                        
+                    document.getElementById('IPADDR_f1').value = edipaddr;
+                    document.getElementById('NETMASK_f1').value = ednetmask;
+                    document.getElementById('GATEWAY_f1').value = edgateway;
+                    document.getElementById('IPADDR_f1').defaultValue = edipaddr;
+                    document.getElementById('NETMASK_f1').defaultValue = ednetmask;
+                    document.getElementById('GATEWAY_f1').defaultValue = edgateway;
+
+                    // form2:
+                    document.getElementById('TITLE_f2').value = edtitle;
+                    document.getElementById('REMARK_f2').value = edremark;
+                    document.getElementById('TITLE_f2').defaultValue = edtitle;
+                    document.getElementById('REMARK_f2').defaultValue = edremark;
+                    // form2 time
+                    setSelectFromIni("TIME_ZONE", edtime_zone_list, ",", edtime_zone);
+                    setSelectFromIni("TIME_FORMAT", edtime_format_list, "|", edtime_format);
+                    // form2.currency
+                    setSelectFromIni("CURRENCY_SYMBOL", edcurrency_symbol_list, ",", edcurrency_symbol);
+                    setRadioFromIni('CURRENCY_SYMBOL_PRINT_SIDE', edcurrency_symbol_print_side);
+                    setRadioFromIni('THOUSAND_SEPARATOR', edthousand_separator);
+                    // form2.url
+                    const urlString = edhome_url1 + "," + edhome_url2
+                    setSelectFromIni("HOME_URL", urlString, ",", edhome_url);
+                    // form2.asset
+                    document.getElementById('ASSET_f2').value = edasset;
+                    document.getElementById('ASSET_f2').defaultValue = edasset;
+
+                    // form3
+                    document.getElementById('ACCOUNT_f3').value = edaccount;
+                    document.getElementById('TOKEN_f3').value = edtoken;
+                    document.getElementById('ACCOUNT_f3').defaultValue = edaccount;
+                    //document.getElementById('TOKEN_f3').defaultValue = edtoken;                    
+                    document.getElementById('TOKEN_LAST_TS_f3').value = edtoken_last_ts;
+                    if (edtoken=="Valid") { 
+                        document.getElementById('TOKEN_f3').value += " from " + edtoken_last_ts
+                    }
+
+                },
+                error: function(xhr) {
+                    alert("Ajax request 發生錯誤")
+                }
+            });            
+        });   
+    </script>
+    <script>
+        function showForm(formId) {
+        // Hide all forms
+        const forms = document.querySelectorAll('.form-container');
+        forms.forEach(form => { form.style.display = 'none';
+                            });
+
+        // Show the selected form
+        const selectedForm = document.getElementById(formId);
+        if (selectedForm) {
+            selectedForm.style.display = 'block';
+            // if not set default, will become empty fields
+            selectedForm.reset();
+            }
+        };
+
+        function setRadioFromIni(radioName, valueFromIni) {
+            const radios = document.getElementsByName(radioName);
+            radios.forEach(radio => {
+                if (radio.value === valueFromIni) {
+                radio.checked = true;
+                radio.defaultChecked = true; // Update the default for reset()
+                } else {
+                radio.checked = false;
+                radio.defaultChecked = false;
+                }
+            });
+        };
+
+        function setSelectFromIni(selectName, itemList, sep, valueFromIni) {
+            const selectBoxes = document.getElementsByName(selectName);
+            if (selectBoxes.length === 0) return; // No select found
+            const selectBox = selectBoxes[0]; // Use the first matching select
+
+            // Optional: Clear existing options
+            selectBox.innerHTML = "";
+
+            const items = itemList.split(sep);
+            items.forEach(function(item) {
+                const option = document.createElement("option");
+                option.value = item;
+                option.textContent = item;
+                // Pre-select the value
+                if (item === valueFromIni) {
+                    option.selected = true;
+                    option.defaultSelected = true;
+                }
+                selectBox.appendChild(option);
+            });
+        };
+    </script>
+    
+    <script>
+        function test_login() {
+            pass
+        }
+    </script>
+    <script>
+        function test_bill(action) {
+            pass
+        }
+    </script>
+</body>
+</html>

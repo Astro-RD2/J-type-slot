@@ -1,1 +1,0 @@
-print("hello run python form1!")
