@@ -4,6 +4,7 @@
 import os, time, datetime, sys
 import subprocess, threading
 #import keyboard  #don't use
+import uinput
 
 # for global keyboard control
 from pynput import keyboard
@@ -98,19 +99,24 @@ print('Home url (with tailed /):', home_url_with_slash)
 token = config['REGISTER']['TOKEN']
 # if no token, acquire one
 if token == '':
-    print('fetch token....')
-    json_data = webapi.fetch_token('ITgame01', 'ITgame01')
-    if json_data['result_code'] == 0:
-        print('0=success')
-        token = json_data['token']
-    elif json_data['result_code'] == -1:
-        print('-1=API request error')
-    elif json_data['result_code'] == -2:
-        print('-2=http status code is not 2xx')
-    elif json_data['result_code'] == -3:
-        print('-3=status field is False')
-    else:
-        print('unknown', json_data['result_code'])
+    for _ in range(30):
+        print('fetch token....')
+        json_data = webapi.fetch_token('ITgame01', 'ITgame01')
+        if json_data['result_code'] == 0:
+            print('0=success')
+            token = json_data['token']
+        elif json_data['result_code'] == -1:
+            print('-1=API request error')
+        elif json_data['result_code'] == -2:
+            print('-2=http status code is not 2xx')
+        elif json_data['result_code'] == -3:
+            print('-3=status field is False')
+        else:
+            print('unknown', json_data['result_code'])
+
+        if token != '':
+            break
+        time.sleep(5)
 
 if token == '':
     print('cannot got token, quit')
@@ -135,16 +141,19 @@ kill_all_firefox()
 
 # 啟動選項（這裡你也可以加入 --kiosk）
 options = Options()
+print('argument(s):', end='')
 for i in range(1, len(sys.argv)):
+    print('[%s]' % sys.argv[i], end='')
     # 無邊框、全螢幕模式
     if sys.argv[i] == '-kiosk' or sys.argv[i] == '--kiosk':
         options.add_argument('-kiosk')
+print()
 
 options.add_argument('-private-window')
 options.add_argument('-remote-allow-system-access')     # 突然必須有此, 不了解理由. 加上就對了.
-#options.add_argument('--window-position=0,0')
-#options.add_argument('--width=768')   # 根據你螢幕調整
-#options.add_argument('--height=1366')
+options.add_argument('--window-position=0,0')
+options.add_argument('--width=1080')   # 根據你螢幕調整
+options.add_argument('--height=1920')
 
 # 啟動瀏覽器 (將產生一內定分頁 BLANK as dummy page)
 driver = webdriver.Firefox(service=service, options=options)
@@ -178,8 +187,8 @@ assert len(driver.window_handles) == 2
 #要求要模擬按下 Ctrl-+ 來 Zoom In. 使元件自適應.
 
 # 以下方法可行, 但最後決定使用 Selenium 的.
-kb_con = Controller()
 '''
+kb_con = Controller()
 kb_con.press(Key.ctrl)
 time.sleep(0.2)
 for _ in range(5):
@@ -197,6 +206,8 @@ driver.set_context("content")
 
 # create selenium action object
 actions = ActionChains(driver)
+
+uinput_dev = uinput.Device([uinput.KEY_SPACE])
 
 '''
 以下方式不行.
@@ -448,7 +459,7 @@ def cash_in(value:float = 10.0):
 
             print('Cash in transaction ended.')
             click_refresh()
-            notify(4000, 'face-smile-big', title='Payment', message='%.2f dollars accepted' % json_data['value'])
+            notify(4000, 'face-smile-big', title='Welcome', message='%.2f dollars accepted' % json_data['value'])
 
     except Exception as e:
         print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
@@ -573,10 +584,15 @@ def on_button(func: str):
             #print('driver.current_url.startswith(home_url)', driver.current_url.startswith(home_url))
             #print('driver.current_url.startswith(<home_url_with_slash>/game)', driver.current_url.startswith(home_url_with_slash + 'game'))
             if not driver.current_url.startswith(home_url) or driver.current_url.startswith(home_url_with_slash + 'game'):
-                #kb_con = Controller()
                 print('tap(space)')
-                kb_con.tap(' ')                     # 有效.
+                #kb_con.tap(' ')                     # 有效.
                 #actions.send_keys(' ').perform()    # 無效. 之前有效.
+                uinput_dev.emit_click(uinput.KEY_SPACE)
+                '''
+                with uinput.Device([uinput.KEY_SPACE]) as device:
+                    time.sleep(0.02)
+                    device.emit_click(uinput.KEY_SPACE)
+                '''
 
         elif func == 'cashout':
             cash_out()
@@ -754,6 +770,8 @@ webapi.join_all()
 # release keyboard module
 print('release kb module')
 listener.stop()
+if uinput_dev:
+    uinput_dev.destroy()
 
 # release printer module
 print('release printer module')

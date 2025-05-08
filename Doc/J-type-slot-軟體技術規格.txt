@@ -153,6 +153,8 @@ VMware Image 版本控制
   $ sudo apt install yad   # 不需要此.
   $ apt install vim      # 需要安裝此. 避免 arrow 出問題.
   $ echo ':color desert' >> /etc/vim/vimrc.local    # 使顏色較明顯. (否則 python 註解會非常暗)
+  $ apt install net-tools    # for ifconfig 
+  $ apt install 
 
 (11) 設定聲音
   聲音方面, 內定安裝後會沒有聲音 (某些 bug), 需進行如下設定:
@@ -227,6 +229,7 @@ VMware Image 版本控制
   $ pip install ewmh
   $ pip install urllib ?
   $ pip install python-xlib ?
+  $ pip install python-uinput
 
 (15). Mount 至 Win11
   - 於 Windows
@@ -263,8 +266,8 @@ VMware Image 版本控制
   /dev/sda2             (Extended)       Containing /dev/sda5, /dev/sda6
   /dev/sda3    20G      /var             ext4, read/write
   /dev/sda4             swap
-  /dev/sda5    10G      /var/opt        ext4, read/write, noatime, barrier=0, data=writeback, nobh
-  /dev/sda6    81.2G    /opt            ext4, read/write or readonly
+  /dev/sda5    10G      /var/astro/nvram ext4, read/write, noatime, barrier=0, data=writeback, nobh
+  /dev/sda6    81.2G    /root            ext4, read/write (for update) or readonly
   -----------  -------  ---------------  ----------------
   TMP          /var/tmp???      Shared memory
 
@@ -276,15 +279,15 @@ VMware Image 版本控制
     /root/astro/data/ --> /var/astro/data/              程式公用資料與公用設定檔案位置
     /root/astro/nvram/ --> /var/astro/nvram/            nvram 所在位置.
     /root/astro/factory_default/                        出廠值存放位置.
-    /var/astro/etc/                                     可變設定檔位置 (網路, hostname, 防火牆等)
+    /var/etc/                                           可變設定檔位置 (網路, hostname, 防火牆等)
   - Files  
     /root/astro/start.sh                                  
     /root/astro/content/AstroKernel/*                      
     /root/astro/content/OperatorMenu/*
     /root/astro/factory_default/etc.tgz                 tar zcvf etc.tgz /var/astro/etc/
     /root/astro/factory_default/root_.config.tgz        tar zcvf etc.tgz /root/.config/
-    /etc/(certain files) --> /var/astro/etc/(certain files)
-    /root/astro/data//setting.ini --> /var/astro/data/setting.ini    目前設定.
+    /etc/(certain files) --> /var/etc/(certain files)
+    /root/astro/data/setting.ini --> /var/astro/data/setting.ini    目前設定.
     /var/astro/data/setting.ini-default                 內定(出廠)設定檔
 
 - Configuration file
@@ -296,7 +299,13 @@ VMware Image 版本控制
     J-type-slot\Src\Configuration-files-templete\setting.ini-default
 
 - Log rotate 設定
+  /var/log/syslog 取代之前 /var/log/messages
   (todo)
+
+- 切換成開機直接進入文字模式:
+  - 命令:
+    $ sudo systemctl set-default multi-user.target
+    $ sudo reboot
 
 - Screen 設定 (Portrait, 原本螢幕順時針轉 90 度)
   - For Gnome: Ubuntu settings => Display => Portrait Right
@@ -318,14 +327,17 @@ VMware Image 版本控制
     或使用 ID
     xinput set-prop 11 --type=float "Coordinate Transformation Matrix" 0 -1 1 1 0 0 0 0 1
 
-  - 設定方式:    
-    xrandr -o right
-    # 獲得 touch ID
-    TOUCH_ID=$(xinput -list | grep -i touch | awk -F'id=' '{print $2}' | awk '{print $1}')
-    if [ -n "$TOUCH_ID" ]; then
-       xinput set-prop ${TOUCH_ID} --type=float "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1  
+    - 設定方式:    
+      xrandr -o right
+      # 獲得 touch ID
+      TOUCH_ID=$(xinput -list | grep -i touch | awk -F'id=' '{print $2}' | awk '{print $1}')
+      if [ -n "$TOUCH_ID" ]; then
+         xinput set-prop ${TOUCH_ID} --type=float "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1  
 
-  - 使 touch 可以捲動 firefox 內容 (內定不行)
+  - 使 console mode 也選轉 90 度
+    $ echo 1 > /sys/class/graphics/fbcon/rotate_all
+
+  - 使 touch 可以捲動 firefox 內容 (內定是拉選取範圍)
     /etc/security/pam_env.conf and add MOZ_USE_XINPUT2 DEFAULT=1
     或
     $ export MOZ_USE_XINPUT2=1
@@ -339,38 +351,195 @@ VMware Image 版本控制
         Option      "TearFree" "true"
     EndSection
 
-  
-- 建立 /etc/profile.d/astro.sh 如下:
-    -----------------------------------------------------
-    OUTPUT_DEV=$(/usr/bin/xrandr -q | grep ' connected '| head -1)
-      
-    if [ -n "$OUTPUT_DEV" ]; then
-        # If needed, adjust resolution ...
-        if ! echo "$OUTPUT_DEV" | grep -qE ' connected (1080x1920|1920x1080)'; then
-            OUTPUT_DEV=$(echo "$OUTPUT_DEV" | awk '{print $1}')
-            xrandr -d :0 --output "$OUTPUT_DEV" --mode 1920x1080
-        fi
-        # Adjust monitor content
-        /usr/bin/xrandr -o right
-      
-        # Adjust touch panel (rotate right)
-        TOUCH_ID=$(/usr/bin/xinput -list | grep -i touch | awk -F'id=' '{print $2}' | awk '{print $1}')
-        echo Touch ID=$TOUCH_ID
+  - 讓桌面的 icon 只要點一下即可啟動. 使用 touch panel 很難 double click
 
-        if [ -n "$TOUCH_ID" ]; then
-            /usr/bin/xinput set-prop "${TOUCH_ID}" --type=float "Coordinate Transformation Matrix" 0 1 0 -1 0 1 0 0 1
+- 使開機時顯示文字, 而非圖案
+  - 參考: https://askubuntu.com/questions/25022/how-to-enable-boot-messages-to-be-printed-on-screen-during-boot-up
+  - vi /etc/default/grub
+  - Find the line starting with GRUB_CMDLINE_LINUX_DEFAULT and remove the parameters 'quiet' and 'splash'
+
+- 無法使用文字模式. 因為 notify-send 會失效.
+
+- 自動登入 console 方式
+  - 參考 https://hackmd.io/@ult-yu1/SyKbe5B3R?utm_source=preview-mode&utm_medium=rec
+  - 步驟:
+    $ mkdir /etc/systemd/system/getty@tty1.service.d
+    $ vim /etc/systemd/system/getty@tty1.service.d/override.conf
+    [Service]
+    ExecStart=
+    ExecStart=-/sbin/agetty --noissue --autologin root %I $TERM
+    Type=idle
+
+- 建立自動啟動機制
+  - 建立檔案 /etc/profile.d/astro.sh
+  - 注意, 不可使用 /etc/rc.local 會找不到 monitor
+-> 不需要#! /bin/sh
+-----------------------------------------------------
+# /etc/profile.d/astro.sh
+#
+# Check networking, adjust console rotation, and eventually launch /root/astro/start.sh
+
+# Run this script only once
+[ -e /var/lock/subsys/astro ] && return 0
+touch /var/lock/subsys/astro
+
+export LC_ALL="en_US.UTF-8"
+echo "$(date): begin /etc/profile.d/astro.sh" | tee /var/log/profile.d_astro.log
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE="\033[0;36m"
+NC='\033[0m'
+
+/usr/bin/setterm -blank 0
+echo 1 > /sys/class/graphics/fbcon/rotate_all
+
+## ping
+c="1"
+start=$(/usr/bin/date +%s)
+echo -n "Check network connection ... "
+while true; do
+    /usr/bin/ping -n -c1 -W3 8.8.8.8 >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}  [OK]${NC}"
+        break
+    else
+        if [ $(( $(/usr/bin/date +%s) - $start )) -ge 210 ]; then
+            echo ""
+            echo -e "${RED} [TIMEOUT] Reboot in 10 seconds${NC}"
+            /usr/bin/sleep 10
+            reboot
         fi
+        echo -n "."
+        if [ $c -eq 10 ]; then
+            echo -n "|"
+            /usr/bin/nmcli device disconnect enp2s0 >/dev/null 2>&1
+            /usr/bin/nmcli device connect enp2s0 >/dev/null 2>&1
+            c="0"
+        fi
+        c=$[$c+1]
     fi
-    -----------------------------------------------------
+    /usr/bin/sleep 1
+done
 
-- /root/astro/start.sh
-  -----------------------------------------------------
-  
-  -----------------------------------------------------
+if [ -x /root/astro/start.sh ]; then
+    echo "$(date): launch /root/astro/start.sh" | tee -a /var/log/profile.d_astro.log
+    /root/astro/start.sh
+fi
+
+echo "$(date): end /etc/profile.d/astro.sh" | tee -a /var/log/profile.d_astro.log
+
+return 0
+
+-----------------------------------------------------
+  - 建立 /root/astro/start.sh 如下:
+-----------------------------------------------------
+#!/bin/bash
+#
+# Filename: /root/astro/start.sh
+# Copyright by Astro Corp.
+#
+
+ASKLOG=/var/log/ask.log
+mv -f $ASKLOG $ASKLOG.1 >/dev/null 2>&1
+rm -f /var/log/.vlt.log.* >/dev/null
+rm -rf /root/.config/Index      # remove the lock of NW.js
+
+#export vblank_mode=1            # 0=Disable waiting vsync for Radeon/Intel
+#export __GL_SYNC_TO_VBLANK=1    # 0=Disable waiting vsync for nVidia
+export LC_ALL="en_US.UTF-8"
+export MOZ_USE_XINPUT2=1
+export PYTHONUNBUFFERED=1       # Unbuffer stdout
+export DISPLAY=:0
+
+PRIO=local6.info
+echo -e '\nREBOOTING --------------------------------------------------' | logger -s -p $PRIO
+
+TARGET_DIR="$(dirname $(realpath $0))"
+echo "Target dir: $TARGET_DIR"
+cd $TARGET_DIR        # add would failure ->  2>&1 | tee -a $ASKLOG | logger -s -p $PRIO
+pwd
+echo "Current dir: $(pwd)"
+
+LAUNCH_APP_COMMAND="/usr/bin/python test_main.py -kiosk"
+echo "Launching \"$LAUNCH_APP_COMMAND\"" | tee -a $ASKLOG | logger -s -p $PRIO
+
+unclutter -display :0 -root -idle 0 &
+
+#/usr/bin/xinit
+/bin/bash <(echo \
+"#!/bin/bash
+
+OUTPUT_DEV=\$(/usr/bin/xrandr -q | grep ' connected '| head -1)
+echo \$OUTPUT_DEV
+
+if [ -n \"\$OUTPUT_DEV\" ]; then
+  # if needed, adjust resolution ...
+  if ! echo \"\$OUTPUT_DEV\" | grep -qE ' connected (1080x1920|1920x1080)'; then
+    OUTPUT_DEV=\$(echo \"\$OUTPUT_DEV\" | awk '{print \$1}')
+    #echo \"Output device: \$OUTPUT_DEV\"
+    xrandr -d :0 --output \"\$OUTPUT_DEV\" --mode 1920x1080
+    echo \$(/usr/bin/xrandr -q | grep ' connected '| head -1)
+  fi
+  # Rotate monitor right
+  /usr/bin/xrandr -d :0 -o right
+
+  # Adjust touch panel to rotate right
+  TOUCH_ID=\$(/usr/bin/xinput -list | grep -i touch | head -1)
+  if [ -n \"\$TOUCH_ID\" ]; then
+    echo \$TOUCH_ID
+    TOUCH_ID=\$(echo \"\$TOUCH_ID\" | awk -F'id=' '{print \$2}' | awk '{print \$1}')
+    echo Touch ID=\$TOUCH_ID
+
+    # Rotate touch panel right (portrait)
+    if [ -n \"\$TOUCH_ID\" ]; then
+      /usr/bin/xinput set-prop \"\${TOUCH_ID}\" --type=float \"Coordinate Transformation Matrix\" 0 1 0 -1 0 1 0 0 1
+    fi
+  fi
+fi
+
+$LAUNCH_APP_COMMAND
+") 2>&1 | tee -a $ASKLOG | logger -s -p $PRIO
+
+# End of start.sh
+-----------------------------------------------------
 
 - 確認送電即自動開機
   (DEL) BIOS => Advanced => IT8786 Super IO Configuration 
              => Restore AC Power Loss by IO 請確認為 [Power On]
+
+- 避免系統進入休眠
+  - 設定命令 for all users
+    su -c 'export $(dbus-launch) ; DISPLAY=:0 gsettings set org.gnome.desktop.session idle-delay 0' - guest &&
+    su -c 'export $(dbus-launch) ; DISPLAY=:0 gsettings set org.gnome.settings-daemon.plugins.power idle-dim false' - guest &&
+    su -c 'export $(dbus-launch) ; DISPLAY=:0 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type nothing' - guest &&
+    su -c 'export $(dbus-launch) ; DISPLAY=:0 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type nothing' - guest &&=
+    su -c 'export $(dbus-launch) ; DISPLAY=:0 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 0' - guest &&
+    su -c 'export $(dbus-launch) ; DISPLAY=:0 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-timeout 0' - guest || echo error
+    DISPLAY=:0 gsettings set org.gnome.desktop.session idle-delay 0 &&
+    DISPLAY=:0 gsettings set org.gnome.settings-daemon.plugins.power idle-dim false &&
+    DISPLAY=:0 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type nothing &&
+    DISPLAY=:0 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type nothing &&
+    DISPLAY=:0 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 0 &&
+    DISPLAY=:0 gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-timeout 0 || echo error
+  - 將相關 sleep 關閉
+    $ sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+    $ systemctl status sleep.target
+
+  - 查詢設定效果
+    DISPLAY=:0 gsettings get org.gnome.desktop.session idle-delay
+    DISPLAY=:0 gsettings get org.gnome.settings-daemon.plugins.power idle-dim
+    DISPLAY=:0 gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
+    DISPLAY=:0 gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type
+    DISPLAY=:0 gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout
+    DISPLAY=:0 gsettings get org.gnome.settings-daemon.plugins.power sleep-inactive-battery-timeout
+
+- 如果要使某 user 或某 %group 透過 sudo 執行某程式無須密碼
+  - 加上如下至 /etc/sudoers
+   guest ALL=(ALL) NOPASSWD: /usr/bin/python    <-- 所有 guest 使用者透過 sudo 執行特權程式都免密碼.
+   %mygroup ALL=(ALL) NOPASSWD: ALL             <-- 所有 mygroup 群組的使用者透過 sudo 執行特權程式都免密碼.
+
 
 ============================================================
 4. 程式技術使用
@@ -394,7 +563,8 @@ VMware Image 版本控制
 - 讀取設定檔案
   設定檔案之位置、內容, 使用方式, 請參考文件 "J-type-slot-軟體系統需求規格.txt" 內, 第 2, 3 章節.
 
-- 開機後自動啟動程式請放置於 ~/.profile.
+- (捨棄)開機後自動啟動程式請放置於 ~/.profile.
+  (改放) /etc/rc.local
 
 - 登入遊戲 API server
   - 程式範例:
@@ -1275,5 +1445,30 @@ Appendex - 技術收集 (僅供內部參考, 尚未納入規格)
 - 連線
  - ping -n -c 1 xxx.xxx.xxx.xxx
  - 檢查 exit code (echo $?), 為 0 表示成功.
+
+- 分析 /etc/下面那些檔案會變動
+  /root
+  /home
+  /boot
+  /usr
+
+- 如果要使某 user 或某 %group 透過 sudo 執行某程式無須密碼
+  - 加上如下至 /etc/sudoers
+   guest ALL=(ALL) NOPASSWD: /usr/bin/python    <-- 所有 guest 使用者透過 sudo 執行特權程式都免密碼.
+   %mygroup ALL=(ALL) NOPASSWD: ALL             <-- 所有 mygroup 群組的使用者透過 sudo 執行特權程式都免密碼.
+
+
+- 可以自己加上 /etc/rc.local, 內容架構:
+  --------------------
+  #!/bin/sh
+  ...
+  exit 0
+  --------------------
+  並且一定要設定可執行.
+
+- 於 /etc/profile.d/xxx.sh
+  --> 開頭不需要 #!/bin/sh, 也不需要設定成可執行.
+  
+  如果中途要離開, 必須使用 return 0, 不可用 exit 0 (會導致登入失敗)
 
 <End of Document>
