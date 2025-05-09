@@ -131,34 +131,34 @@
         const kernel_ver = document.getElementById('KERNEL_VER_h');       
         const title = document.getElementById('TITLE_h');
         const remark = document.getElementById('REMARK_h');
-        const timezone_list = document.getElementById('TIME_ZONE_LIST'); 
-        const timezone = document.getElementById('TIME_ZONE');
-        const timeformat_list = document.getElementById('TIME_FORMAT_LIST'); 
-        const timeformat = document.getElementById('TIME_FORMAT');
-        const currency_symbole_list = document.getElementById('CURRENCY_SYMBOL_LIST'); 
-        const currency_symbole = document.getElementById('CURRENCY_SYMBOL');  
-        const currency_symbole_print_side = document.getElementById('CURRENCY_SYMBOL_PRINT_SIDE');
-        //const thousand_separator_list = document.getElementById('THOUSAND_SEPARATOR_LIST');
-        const thousand_separator = document.getElementById('THOUSAND_SEPARATOR');            
+        // const timezone_list = document.getElementById('TIME_ZONE_LIST'); 
+        // const timezone = document.getElementById('TIME_ZONE');
+        // const timeformat_list = document.getElementById('TIME_FORMAT_LIST'); 
+        // const timeformat = document.getElementById('TIME_FORMAT');
+        // const currency_symbole_list = document.getElementById('CURRENCY_SYMBOL_LIST'); 
+        // const currency_symbole = document.getElementById('CURRENCY_SYMBOL');  
+        // const currency_symbole_print_side = document.getElementById('CURRENCY_SYMBOL_PRINT_SIDE');
+        // //const thousand_separator_list = document.getElementById('THOUSAND_SEPARATOR_LIST');
+        // const thousand_separator = document.getElementById('THOUSAND_SEPARATOR');            
         const home_url = document.getElementById('HOME_URL_h');
-        const home_url1 = document.getElementById('HOME_URL1');
-        const home_url2 = document.getElementById('HOME_URL2');
+        // const home_url1 = document.getElementById('HOME_URL1');
+        // const home_url2 = document.getElementById('HOME_URL2');
         const asset = document.getElementById('ASSET_h');
 
         // NETWORK
-        const bootprot = document.getElementById('BOOTPROT')
+        // const bootprot = document.getElementById('BOOTPROT')
         const ipaddr = document.getElementById('IPADDR_h'); 
-        const netmask = document.getElementById('NETMASK'); 
-        const gateway = document.getElementById('GATEWAY'); 
+        // const netmask = document.getElementById('NETMASK'); 
+        // const gateway = document.getElementById('GATEWAY'); 
 
         // REGISTER
         const account = document.getElementById('ACCOUNT_h');
         const token = document.getElementById('TOKEN_h');
-        const token_last_ts = document.getElementById('TOKEN_LAST_TS');
+        // const token_last_ts = document.getElementById('TOKEN_LAST_TS');
 
         // DEVICE
         // const  BILL_ACCEPTOR_PORT
-        const printer_name = document.getElementById('PRINTER_NAME');
+        // const printer_name = document.getElementById('PRINTER_NAME');
 
         const current_dt = document.getElementById('CURRENT_DT_h'); 
         const now = new Date();
@@ -175,109 +175,114 @@
                 success: function(data) {                         
                     //kernel_ver.textContent =  "Kernel ver: " + data.appInfo.id;
                     const new_data = JSON.parse(data);
+                    // console.log("title:", new_data.TITLE)
+                    // console.log("remark:", new_data['REMARK'])
                     
-                    for (const [key, value] of Object.entries(new_data)) {                            
-                        // BASIC
-                        if (key == "TITLE") {
-                        var edtitle=value || '';
-                        } else if (key == "REMARK") {                                
-                        var edremark=value || '';
-                        } else if (key == "TIME_ZONE_LIST") {
-                            var edtime_zone_list=value || '';
-                        } else if (key=="TIME_ZONE") {
-                            var edtime_zone=value || '';
-                        } else if (key == "TIME_FORMAT_LIST") {                                
-                        var edtime_format_list=value || '';
-                        }else if (key == "TIME_FORMAT") {                                
-                        var edtime_format=value || '';
-                        } else if (key == "CURRENCY_SYMBOL_LIST") {
-                            var edcurrency_symbol_list=value || ''
-                        } else if (key=="CURRENCY_SYMBOL") {
-                            var edcurrency_symbol=value || '';
-                        } else if (key == "CURRENCY_SYMBOL_PRINT_SIDE") {                                
-                        var edcurrency_symbol_print_side=value  || '';
-                        } else if (key == "THOUSAND_SEPARATOR") {
-                            var edthousand_separator=value  || '';
-                        } else if (key=="HOME_URL") {
-                            var edhome_url=value  || '';
-                        } else if (key=="HOME_URL1") {
-                            var edhome_url1=value  || '';
-                        } else if (key=="HOME_URL2") {
-                            var edhome_url2=value  || '';
-                        } else if (key=="ASSET") {
-                            var edasset=value || '';
-                        } 
-                        // NETWORK
-                        else if (key=="BOOTPROT") {
-                            var edbootprot=value || '';
-                        } else if (key=="IPADDR") {
-                            var edipaddr=value || '';
-                        } else if (key=="NETMASK") {
-                            var ednetmask=value || '';
-                        } else if (key=="GATEWAY") {
-                            var edgateway=value || '';
-                        }
-                        // REGISTER
-                        else if (key=="ACCOUNT") {
-                            var edaccount=value || '';
-                        } else if (key=="TOKEN") {
-                            var edtoken=value || '';
-                        } else if (key=="TOKEN_LAST_TS") {
-                            var edtoken_last_ts=value || '';
-                        } 
-                        // DEVICE
-                        else if (key=="BILL_ACCEPTOR_PORT") {
-                            var edbill_acceptor_port=value || '';
-                        }
-                    }
+                    // for (const [key, value] of Object.entries(new_data)) {                            
+                    //     // BASIC
+                    //     if (key == "TITLE") {
+                    //     var edtitle=value || '';
+                    //     } else if (key == "REMARK") {                                
+                    //     var edremark=value || '';
+                    //     } else if (key == "TIME_ZONE_LIST") {
+                    //         var edtime_zone_list=value || '';
+                    //     } else if (key=="TIME_ZONE") {
+                    //         var edtime_zone=value || '';
+                    //     } else if (key == "TIME_FORMAT_LIST") {                                
+                    //     var edtime_format_list=value || '';
+                    //     }else if (key == "TIME_FORMAT") {                                
+                    //     var edtime_format=value || '';
+                    //     } else if (key == "CURRENCY_SYMBOL_LIST") {
+                    //         var edcurrency_symbol_list=value || ''
+                    //     } else if (key=="CURRENCY_SYMBOL") {
+                    //         var edcurrency_symbol=value || '';
+                    //     } else if (key == "CURRENCY_SYMBOL_PRINT_SIDE") {                                
+                    //     var edcurrency_symbol_print_side=value  || '';
+                    //     } else if (key == "THOUSAND_SEPARATOR") {
+                    //         var edthousand_separator=value  || '';
+                    //     } else if (key=="HOME_URL") {
+                    //         var edhome_url=value  || '';
+                    //     } else if (key=="HOME_URL1") {
+                    //         var edhome_url1=value  || '';
+                    //     } else if (key=="HOME_URL2") {
+                    //         var edhome_url2=value  || '';
+                    //     } else if (key=="ASSET") {
+                    //         var edasset=value || '';
+                    //     } 
+                    //     // NETWORK
+                    //     else if (key=="BOOTPROT") {
+                    //         var edbootprot=value || '';
+                    //     } else if (key=="IPADDR") {
+                    //         var edipaddr=value || '';
+                    //     } else if (key=="NETMASK") {
+                    //         var ednetmask=value || '';
+                    //     } else if (key=="GATEWAY") {
+                    //         var edgateway=value || '';
+                    //     }
+                    //     // REGISTER
+                    //     else if (key=="ACCOUNT") {
+                    //         var edaccount=value || '';
+                    //     } else if (key=="TOKEN") {
+                    //         var edtoken=value || '';
+                    //     } else if (key=="TOKEN_LAST_TS") {
+                    //         var edtoken_last_ts=value || '';
+                    //     } 
+                    //     // DEVICE
+                    //     else if (key=="BILL_ACCEPTOR_PORT") {
+                    //         var edbill_acceptor_port=value || '';
+                    //     }
+                    // }
                     // header:
                     kernel_ver.textContent +=  "NO INFO";
-                    ipaddr.textContent += edipaddr;           
+                    ipaddr.textContent += new_data.IPADDR;  // edipaddr;           
                     current_dt.textContent += " " + formattedDate + " " + formattedTime;              
-                    home_url.textContent += edhome_url;                        
-                    title.textContent += edtitle;
-                    asset.textContent += edasset;
-                    account.textContent += edaccount;
-                    token.textContent += edtoken;
-                    remark.textContent += edremark;
+                    home_url.textContent += new_data.HOME_URL;  // edhome_url;                        
+                    title.textContent += new_data.TITLE;  // edtitle;
+                    asset.textContent += new_data.ASSET;  // edasset;
+                    account.textContent += new_data.ACCOUNT; // edaccount;
+                    token.textContent += new_data.TOKEN;  // edtoken;
+                    remark.textContent += new_data.REMARK;  // edremark;
 
                     // display form:
                     // form1:                        
-                    setRadioFromIni("BOOTPROT", edbootprot);                        
-                    document.getElementById('IPADDR_f1').value = edipaddr;
-                    document.getElementById('NETMASK_f1').value = ednetmask;
-                    document.getElementById('GATEWAY_f1').value = edgateway;
-                    document.getElementById('IPADDR_f1').defaultValue = edipaddr;
-                    document.getElementById('NETMASK_f1').defaultValue = ednetmask;
-                    document.getElementById('GATEWAY_f1').defaultValue = edgateway;
+                    setRadioFromIni("BOOTPROT", new_data.BOOTPROT);  // edbootprot);                        
+                    document.getElementById('IPADDR_f1').value = new_data.IPADDR;  // edipaddr;
+                    document.getElementById('NETMASK_f1').value = new_data.NETMASK;  // ednetmask;
+                    document.getElementById('GATEWAY_f1').value = new_data.GATEWAY;  // edgateway;
+                    document.getElementById('IPADDR_f1').defaultValue = new_data.IPADDR;  //edipaddr;
+                    document.getElementById('NETMASK_f1').defaultValue = new_data.NETMASK;  // ednetmask;
+                    document.getElementById('GATEWAY_f1').defaultValue = new_data.GATEWAY;  // edgateway;
 
                     // form2:
-                    document.getElementById('TITLE_f2').value = edtitle;
-                    document.getElementById('REMARK_f2').value = edremark;
-                    document.getElementById('TITLE_f2').defaultValue = edtitle;
-                    document.getElementById('REMARK_f2').defaultValue = edremark;
+                    document.getElementById('TITLE_f2').value = new_data.TITLE;  // edtitle;
+                    document.getElementById('REMARK_f2').value = new_data.REMARK;  // edremark;
+                    document.getElementById('TITLE_f2').defaultValue = new_data.TITLE;
+                    document.getElementById('REMARK_f2').defaultValue = new_data.REMARK;
                     // form2 time
-                    setSelectFromIni("TIME_ZONE", edtime_zone_list, ",", edtime_zone);
-                    setSelectFromIni("TIME_FORMAT", edtime_format_list, "|", edtime_format);
+                    const edtime_zone_list = new_data.TIME_ZONE_LIST;
+                    setSelectFromIni("TIME_ZONE", edtime_zone_list, ",", new_data.TIME_ZONE);
+                    const edtime_format_list = new_data.TIME_FORMAT_LIST;
+                    setSelectFromIni("TIME_FORMAT", edtime_format_list, "|", new_data.TIME_FORMAT);
                     // form2.currency
-                    setSelectFromIni("CURRENCY_SYMBOL", edcurrency_symbol_list, ",", edcurrency_symbol);
-                    setRadioFromIni('CURRENCY_SYMBOL_PRINT_SIDE', edcurrency_symbol_print_side);
-                    setRadioFromIni('THOUSAND_SEPARATOR', edthousand_separator);
+                    const edcurrency_symbol_list = new_data.CURRENCY_SYMBOL_LIST;
+                    setSelectFromIni("CURRENCY_SYMBOL", edcurrency_symbol_list, ",", new_data.CURRENCY_SYMBOL);
+                    setRadioFromIni('CURRENCY_SYMBOL_PRINT_SIDE', new_data.CURRENCY_SYMBOL_PRINT_SIDE);  // edcurrency_symbol_print_side);
+                    setRadioFromIni('THOUSAND_SEPARATOR', new_data.THOUSAND_SEPARATOR);  // edthousand_separator);
                     // form2.url
-                    const urlString = edhome_url1 + "," + edhome_url2
-                    setSelectFromIni("HOME_URL", urlString, ",", edhome_url);
+                    const urlString = new_data.HOME_URL1 + "," + new_data.HOME_URL2 + "," + new_data.HOME_URL3;
+                    setSelectFromIni("HOME_URL", urlString, ",", new_data.HOME_URL);
                     // form2.asset
-                    document.getElementById('ASSET_f2').value = edasset;
-                    document.getElementById('ASSET_f2').defaultValue = edasset;
+                    document.getElementById('ASSET_f2').value = new_data.ASSET;
+                    document.getElementById('ASSET_f2').defaultValue = new_data.ASSET;
 
                     // form3
-                    document.getElementById('ACCOUNT_f3').value = edaccount;
-                    document.getElementById('TOKEN_f3').value = edtoken;
-                    document.getElementById('ACCOUNT_f3').defaultValue = edaccount;
+                    document.getElementById('ACCOUNT_f3').value = new_data.ACCOUNT;
+                    document.getElementById('TOKEN_f3').value = new_data.TOKEN;
+                    document.getElementById('ACCOUNT_f3').defaultValue = new_data.ACCOUNT;
                     //document.getElementById('TOKEN_f3').defaultValue = edtoken;                    
-                    document.getElementById('TOKEN_LAST_TS_f3').value = edtoken_last_ts;
+                    document.getElementById('TOKEN_LAST_TS_f3').value = new_data.TOKEN_LAST_TS;
                     if (edtoken=="Valid") { 
-                        document.getElementById('TOKEN_f3').value += " from " + edtoken_last_ts
+                        document.getElementById('TOKEN_f3').value += " from " + new_data.TOKEN_LAST_TS;
                     }
 
                 },

@@ -77,6 +77,7 @@ def getDataSetting():
                 "HOME_URL": config['BASIC']['HOME_URL'],
                 "HOME_URL1": config['BASIC']['HOME_URL1'],
                 "HOME_URL2": config['BASIC']['HOME_URL2'],
+                "HOME_URL3": config['BASIC']['HOME_URL3'],
                 "ASSET": config['BASIC']['ASSET'],
                 "BOOTPROT": config['NETWORK']['BOOTPROT'],
                 "IPADDR": config['NETWORK']['IPADDR'],
@@ -114,12 +115,11 @@ def setIniData(section_id):
             bootprot = "dhcp"
 
         # update
-        config.set(section_id, 'BOOTPROT', bootprot)
+        config[section_id]['BOOTPROT'] = bootprot
         if bootprot == "static":
-            # for reference: config[section_id]['IPADDR'] = ipaddr
-            config.set(section_id, 'IPADDR', ipaddr)
-            config.set(section_id, 'NETMASK', netmask)
-            config.set(section_id, 'GATEWAY', gateway)
+            config[section_id]['IPADDR'] = ipaddr
+            config[section_id]['NETMASK'] = netmask
+            config[section_id]['GATEWAY'] = gateway
 
     # BASIC
     elif section_id == "BASIC":
@@ -131,26 +131,26 @@ def setIniData(section_id):
         cs_print_side = request.form.get('CURRENCY_SYMBOL_PRINT_SIDE')
         thousand_separator = request.form.get('THOUSAND_SEPARATOR')    
         home_url = request.form.get('HOME_URL')
-        apientry = request.form['apientry']
+        # apientry = request.form['apientry']
         asset = request.form['ASSET_f2']
 
-        # update
-        config.set(section_id, 'TITLE', title)
-        config.set(section_id, 'REMARK', remark)
-        config.set(section_id, 'TIME_ZONE', time_zone)
-        config.set(section_id, 'TIME_FORMAT', time_format)
-        config.set(section_id, 'CURRENCY_SYMBOL', currency_symbol)
-        config.set(section_id, 'CURRENCY_SYMBOL_PRINT_SIDE', cs_print_side)
-        config.set(section_id, 'THOUSAND_SEPARATOR', thousand_separator)
-        config.set(section_id, 'HOME_URL', home_url)
-        # config.set(section_id, 'TITLE', apientry)
-        config.set(section_id, 'ASSET', asset)
+        # update        
+        config[section_id]['TITLE'] = title
+        config[section_id]['REMARK'] = remark
+        config[section_id]['TIME_ZONE'] = time_zone
+        config[section_id]['TIME_FORMAT'] = time_format
+        config[section_id]['CURRENCY_SYMBOL'] = currency_symbol
+        config[section_id]['CURRENCY_SYMBOL_PRINT_SIDE'] = cs_print_side
+        config[section_id]['THOUSAND_SEPARATOR'] = thousand_separator
+        config[section_id]['HOME_URL'] = home_url
+        # config[section_id]['TITLE'] = apientry
+        config[section_id]['ASSET'] = asset
 
     # REGISTER
     elif section_id == "REGISTER":
         account = request.form['ACCOUNT_f3']
         #update
-        config.set(section_id, 'ACCOUNT', account)
+        config[section_id]['ACCOUNT'] = account
     else:
         pass
 

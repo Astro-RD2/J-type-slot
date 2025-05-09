@@ -28,12 +28,13 @@ CURRENCY_SYMBOL_PRINT_SIDE=left
 THOUSAND_SEPARATOR=,
 
 # Home URL of current setting, and picking list (at most 3 items in list)
-# Format: <Home URL>,<API server URL>
-# E.g. HOME_URL=https://demo.n1s168.com/#/,https://api.n1s168.com
+# Format: <Home URL>|<API server URL>
+# E.g. HOME_URL=https://demo.n1s168.com/#/|https://api.n1s168.com
 # May be no value.
-HOME_URL=https://demo.n1s168.com/#/,https://api.n1s168.com
+HOME_URL=https://demo.n1s168.com/#/|https://api.n1s168.com
 HOME_URL1=
 HOME_URL2=
+HOME_URL3=
 
 # The unique ID for this machine (optional)
 ASSET=
